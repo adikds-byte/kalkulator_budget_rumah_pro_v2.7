@@ -1,0 +1,2374 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kalkulator Estimasi Budget Rumah Pro V2.6 — Starter Kit 8 Langkah Anti-Boncos</title>
+    
+    <!-- Tailwind CSS with Dark Mode Class Configuration -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#ecfdf5', 100: '#d1fae5', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857' },
+                        slate: { 950: '#040711' }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Three.js & OrbitControls for Photorealistic 3D Earth, Loading & Screensaver -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Orbitron:wght@600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; transition: background-color 0.25s ease, color 0.25s ease; }
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+        .mono-font { font-family: 'JetBrains Mono', monospace; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #10b981; }
+
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .drag-handle { cursor: move; user-select: none; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #printableReport, #printableReport * { visibility: visible; }
+            #printableReport { position: absolute; left: 0; top: 0; width: 100%; display: block !important; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-900 dark:bg-[#040711] dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col overflow-x-hidden selection:bg-emerald-500 selection:text-black relative">
+
+    <!-- 3D REALISTIC EARTH BACKGROUND CONTAINER -->
+    <div id="earth-3d-bg" class="fixed inset-0 z-[-1] pointer-events-none opacity-10 dark:opacity-20 transition-opacity duration-700"></div>
+
+    <!-- 1. LOADING SCREEN ANIMASI BUMI BERPUTAR & PROGRESS BAR -->
+    <div id="loadingOverlay" class="fixed inset-0 z-[100] bg-slate-950 text-white flex flex-col items-center justify-between p-6 transition-opacity duration-700 select-none">
+        <div class="text-center mt-4">
+            <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-900/80 border border-emerald-500/30 text-xs font-mono text-emerald-300 shadow-inner">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="loadingClock">Memuat Hari & Waktu...</span>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black tracking-tight text-white mt-3 flex items-center justify-center gap-2 font-tech">
+                <i class="fa-solid fa-house-chimney text-emerald-400"></i> BUDGET RUMAH STARTER KIT PRO
+            </h2>
+            <p class="text-xs text-slate-400 font-mono">Kalkulator Estimasi 8 Langkah Bangun & Renovasi Indonesia // Anti-Boncos 2026</p>
+        </div>
+
+        <div class="relative w-64 h-64 sm:w-80 sm:h-80 flex items-center justify-center my-auto">
+            <canvas id="loadingEarthCanvas" class="w-full h-full"></canvas>
+            <div class="absolute inset-0 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none"></div>
+        </div>
+
+        <div class="w-full max-w-md text-center mb-6">
+            <div class="flex justify-between text-xs text-slate-400 font-mono mb-2">
+                <span id="loadingStatusText">Menginisialisasi Engine Estimasi Biaya Konstruksi...</span>
+                <span id="loadingPercent">0%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                <div id="loadingProgressBar" class="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 w-0 transition-all duration-300"></div>
+            </div>
+            <div class="mt-4">
+                <button onclick="dismissLoadingScreen()" class="text-xs text-slate-400 hover:text-white px-3.5 py-1.5 rounded-xl border border-slate-800 hover:bg-slate-900 transition font-mono font-bold cursor-pointer">
+                    Lewati / Masuk ke Dasbor &rarr;
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. SCREENSAVER REALISTIS BUMI BERPUTAR 3D DENGAN AWAN & QUOTES -->
+    <div id="screensaverOverlay" class="fixed inset-0 z-[96] bg-slate-950/75 backdrop-blur-sm text-white hidden flex-col items-center justify-between p-6 sm:p-8 select-none transition-opacity duration-500" onclick="closeScreensaver(event)">
+        <div class="w-full flex items-center justify-between z-20 px-3 sm:px-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600/30 border border-emerald-400/40 flex items-center justify-center text-emerald-300 text-lg shadow">
+                    <i class="fa-solid fa-earth-asia"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-bold text-white font-tech">Screensaver 3D Bumi & Waktu Konstruksi</div>
+                    <div class="text-xs text-slate-300 font-mono">Tekan ESC atau ketuk layar untuk kembali ke kalkulator</div>
+                </div>
+            </div>
+            <button onclick="toggleScreensaver(false)" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white transition flex items-center gap-1.5 shadow cursor-pointer font-mono">
+                <i class="fa-solid fa-xmark"></i> Tutup Screensaver
+            </button>
+        </div>
+
+        <div class="my-auto flex flex-col items-center text-center z-20 max-w-4xl px-4">
+            <div id="screensaverClock" class="text-5xl sm:text-7xl lg:text-8xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 via-white to-teal-200 font-mono drop-shadow-lg">
+                00:00:00
+            </div>
+            <div id="screensaverDate" class="text-sm sm:text-lg font-bold text-emerald-300 mt-2 uppercase tracking-widest font-mono">
+                Memuat Tanggal...
+            </div>
+
+            <div class="w-full h-44 sm:h-60 my-2 flex items-center justify-center pointer-events-none">
+                <div class="text-xs text-cyan-300 font-mono tracking-widest uppercase animate-pulse font-bold bg-slate-900/60 px-4 py-1.5 rounded-full border border-cyan-500/30">
+                    &lt; GESER MOUSE ATAU SENTUH UNTUK MEMUTAR BUMI 3D &gt;
+                </div>
+            </div>
+
+            <div class="bg-slate-900/85 border border-emerald-500/30 p-5 rounded-2xl shadow-2xl max-w-2xl mx-auto backdrop-blur">
+                <div class="text-emerald-400 text-sm mb-1.5">
+                    <i class="fa-solid fa-quote-left mr-1"></i> <span class="font-bold text-xs uppercase tracking-wider text-emerald-300">Inspirasi Perencanaan Rumah & Konstruksi</span> <i class="fa-solid fa-quote-right ml-1"></i>
+                </div>
+                <p id="screensaverQuote" class="text-sm sm:text-base italic text-slate-200 leading-relaxed">
+                    "Membangun rumah idaman bermula dari perencanaan anggaran yang cermat, disiplin pos pengerjaan, dan pemilihan struktur yang kokoh."
+                </p>
+                <div class="mt-2 text-xs text-slate-400 font-mono font-bold">
+                    — Ir. Mohamad Hartadi • Rekayasa Geoteknik & Struktur Sipil
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full text-center text-xs text-slate-400 font-mono z-20">
+            Budget Rumah Starter Kit Pro V2.6 • Civil Structural & Cost Architecture
+        </div>
+    </div>
+
+    <!-- TOP ACCENT STRIP -->
+    <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 shadow-[0_0_25px_rgba(16,185,129,0.6)]"></div>
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="bg-slate-900/95 dark:bg-[#0a1224]/95 text-white sticky top-0 z-40 border-b border-slate-700/80 dark:border-slate-800 shadow-md backdrop-blur">
+        <div class="w-full px-3 sm:px-5 md:px-6 lg:px-8 xl:px-10 h-16 sm:h-20 flex items-center justify-between gap-3">
+            <div class="flex items-center space-x-3 shrink-0">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-emerald-600 p-0.5 shadow-md flex items-center justify-center border border-emerald-300">
+                    <div class="w-full h-full rounded-2xl bg-slate-950 flex items-center justify-center text-emerald-400 text-xl font-black">
+                        <i class="fa-solid fa-house-chimney"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-base sm:text-xl font-black tracking-wider font-tech text-white leading-none uppercase">
+                            BUDGET RUMAH <span class="text-emerald-400">PRO</span>
+                        </span>
+                        <span class="text-[10px] sm:text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">V2.6 PRO</span>
+                    </div>
+                    <div class="text-[11px] sm:text-xs font-mono text-slate-300 font-bold mt-1">
+                        KALKULATOR ESTIMASI BANGUN & RENOVASI INDONESIA // ANTI-BONCOS
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Clock Widget (Hari & Waktu Lengkap) -->
+            <div class="hidden md:flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-xs font-mono shadow-inner shrink-0">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                <span class="text-emerald-300 font-bold" id="headerLiveClock">Memuat Hari & Waktu...</span>
+            </div>
+
+            <div class="flex items-center space-x-2 shrink-0">
+                <button onclick="toggleHelpModal(true)" class="inline-flex items-center px-3 py-2 text-xs sm:text-sm font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white transition shadow border border-indigo-400/30 cursor-pointer">
+                    <i class="fa-solid fa-circle-question mr-1.5 text-indigo-200"></i> <span>Help System</span>
+                </button>
+                <button onclick="toggleScreensaver(true)" class="inline-flex items-center px-3 py-2 text-xs sm:text-sm font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow border border-blue-400/30 cursor-pointer">
+                    <i class="fa-solid fa-earth-americas mr-1.5 text-cyan-200 animate-spin" style="animation-duration: 15s;"></i> <span>Screensaver</span>
+                </button>
+                <button onclick="toggleChatDrawer(); handleChatQuery('my aplikasi');" class="shrink-0 px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/50 hover:bg-purple-500 hover:text-slate-950 transition flex items-center gap-1.5 cursor-pointer shadow-sm font-bold">
+                <i class="fa-solid fa-cubes-stacked text-purple-500"></i> 50+ My Aplikasi
+            </button>
+            <button onclick="toggleDevModal(true)" class="inline-flex items-center px-3 py-2 text-xs sm:text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition shadow border border-emerald-400/30 cursor-pointer">
+                    <i class="fa-solid fa-user-gear mr-1.5 text-emerald-200"></i> <span>Programmer</span>
+                </button>
+                <button onclick="toggleDarkMode()" id="themeToggleBtn" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 transition border border-slate-700 cursor-pointer" title="Ubah Mode Gelap / Terang">
+                    <i id="themeIcon" class="fa-solid fa-sun text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- SHORTCUT TOOLBAR STRIP -->
+    <section class="bg-white dark:bg-slate-900 border-b border-slate-300 dark:border-slate-800 py-2.5 px-3 sm:px-5 md:px-6 lg:px-8 xl:px-10 shadow-sm z-30 transition-colors">
+        <div class="w-full flex items-center gap-2.5 overflow-x-auto hide-scrollbar text-xs sm:text-sm font-mono font-bold">
+            <span class="text-slate-700 dark:text-slate-300 text-xs uppercase font-extrabold shrink-0 tracking-wider flex items-center gap-1">
+                <i class="fa-solid fa-bolt text-emerald-500"></i> PINTASAN CEPAT:
+            </span>
+            <button onclick="jumpToStep(1)" class="shrink-0 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/50 hover:bg-emerald-500 hover:text-slate-950 transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                <i class="fa-solid fa-sliders text-emerald-500"></i> 8 Langkah Wizard
+            </button>
+            <button onclick="setQuickLuas(60); jumpToStep(2);" class="shrink-0 px-3 py-1.5 rounded-xl bg-blue-500/20 text-blue-800 dark:text-blue-300 border border-blue-500/50 hover:bg-blue-500 hover:text-slate-950 transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                <i class="fa-solid fa-ruler-combined text-blue-500"></i> Tipe 36/60
+            </button>
+            <button onclick="setQuickLuas(72); jumpToStep(2);" class="shrink-0 px-3 py-1.5 rounded-xl bg-indigo-500/20 text-indigo-800 dark:text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500 hover:text-slate-950 transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                <i class="fa-solid fa-house-chimney-window text-indigo-500"></i> Tipe 45/72
+            </button>
+            <button onclick="setQuickLuas(120); jumpToStep(2);" class="shrink-0 px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/50 hover:bg-purple-500 hover:text-slate-950 transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                <i class="fa-solid fa-building text-purple-500"></i> 2 Lantai 120m²
+            </button>
+            <button onclick="document.querySelector('input[value=\'bangun_budget\']').checked = true; jumpToStep(4);" class="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/50 hover:bg-amber-500 hover:text-slate-950 transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                <i class="fa-solid fa-sack-dollar text-amber-500"></i> Hitung Luas dari Budget
+            </button>
+            <button onclick="toggleHelpModal(true)" class="shrink-0 px-3 py-1.5 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-900 dark:text-indigo-200 border border-indigo-400 dark:border-indigo-800 hover:bg-indigo-600 hover:text-white transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                <i class="fa-solid fa-book-bookmark text-indigo-500"></i> 15 Pos SNI & Solusi
+            </button>
+            <button onclick="toggleDevModal(true)" class="shrink-0 px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-400 dark:border-slate-700 hover:bg-emerald-500 hover:text-slate-950 transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+                <i class="fa-solid fa-id-card text-emerald-500"></i> Ir. Mohamad Hartadi
+            </button>
+        </div>
+    </section>
+    <!-- MAIN WORKSPACE -->
+    <main class="max-w-4xl mx-auto px-4 py-6 sm:py-8 w-full flex-grow">
+
+        <!-- WIZARD STEP CONTAINER -->
+        <div id="wizard-section" class="space-y-6">
+            
+            <!-- Progress Bar & Indicator -->
+            <div class="bg-white dark:bg-slate-900/90 border border-slate-300 dark:border-slate-800 p-4 sm:p-5 rounded-2xl shadow-xl transition-colors">
+                <div class="flex items-center justify-between text-xs font-semibold mb-2 font-mono">
+                    <span class="text-emerald-600 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 font-bold" id="step-title-badge">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        Langkah <span id="current-step-num">1</span> dari 8
+                    </span>
+                    <span class="text-slate-500 dark:text-slate-400 font-bold" id="step-percent">12% Selesai</span>
+                </div>
+                <div class="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5">
+                    <div id="progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-300 w-[12.5%]"></div>
+                </div>
+                <div class="mt-2 text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200" id="step-instruction">
+                    Pilih Jenis Proyek & Mode Perhitungan
+                </div>
+            </div>
+
+            <!-- FORM STEPS -->
+            <div class="bg-white dark:bg-slate-900/80 border border-slate-300 dark:border-slate-800 rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden backdrop-blur-sm transition-colors">
+                
+                <!-- STEP 1: Jenis Proyek -->
+                <div class="wizard-step" id="step-1">
+                    <div class="mb-5">
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-tech uppercase tracking-wide">
+                            Langkah 1: Jenis Proyek Konstruksi
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Pilih metode kalkulasi yang sesuai dengan kebutuhan rencana properti Anda.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex flex-col justify-between group relative overflow-hidden has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="project_type" value="bangun_luas" class="hidden" checked onchange="updateCalcMode()">
+                            <div>
+                                <div class="text-3xl mb-2 text-emerald-500"><i class="fa-solid fa-house"></i></div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500 text-sm sm:text-base">Bangun Rumah Baru (Hitung Budget)</div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Hitung estimasi total biaya pembangunan berdasarkan ukuran luas tanah atau bangunan yang direncanakan.</p>
+                            </div>
+                            <div class="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 font-mono">Paling Populer →</div>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex flex-col justify-between group relative overflow-hidden has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="project_type" value="bangun_budget" class="hidden" onchange="updateCalcMode()">
+                            <div>
+                                <div class="text-3xl mb-2 text-amber-500"><i class="fa-solid fa-sack-dollar"></i></div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500 text-sm sm:text-base">Reversi: Hitung Luas dari Budget</div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Punya dana tabungan tertentu? Hitung berapa meter persegi luas bangunan maksimal yang aman Anda bangun.</p>
+                            </div>
+                            <div class="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 font-mono">Mode Anti-Boncos →</div>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex flex-col justify-between group relative overflow-hidden sm:col-span-2 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="project_type" value="renovasi" class="hidden" onchange="updateCalcMode()">
+                            <div>
+                                <div class="text-3xl mb-2 text-blue-500"><i class="fa-solid fa-hammer"></i></div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500 text-sm sm:text-base">Renovasi Bangunan Eksisting</div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Perbaikan atau perombakan rumah tinggal (finishing ulang, ganti atap, sekat ruangan baru, atau penambahan parsial).</p>
+                            </div>
+                            <div class="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 font-mono">Penyesuaian Koefisien Renovasi →</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Dimensi & Luas Bangunan -->
+                <div class="wizard-step hidden" id="step-2">
+                    <div class="mb-5">
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-tech uppercase tracking-wide">
+                            Langkah 2: Ukuran & Dimensi Bangunan
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Tentukan total luas lantai bangunan yang akan dibangun.</p>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider font-mono">Pilihan Cepat Ukuran Kaveling Populer</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            <button type="button" onclick="setQuickLuas(60)" class="quick-luas-btn py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white transition shadow-sm cursor-pointer font-mono">60 m² (Tipe 36/60)</button>
+                            <button type="button" onclick="setQuickLuas(72)" class="quick-luas-btn py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white transition shadow-sm cursor-pointer font-mono">72 m² (Tipe 45/72)</button>
+                            <button type="button" onclick="setQuickLuas(90)" class="quick-luas-btn py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white transition shadow-sm cursor-pointer font-mono">90 m² (Tipe 54/90)</button>
+                            <button type="button" onclick="setQuickLuas(120)" class="quick-luas-btn py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white transition shadow-sm cursor-pointer font-mono">120 m²</button>
+                            <button type="button" onclick="setQuickLuas(200)" class="quick-luas-btn py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white transition shadow-sm cursor-pointer font-mono">200 m²</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 mb-5">
+                        <div class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center justify-between font-mono">
+                            <span><i class="fa-solid fa-calculator text-emerald-500 mr-1"></i> Kalkulator Dimensi (Panjang × Lebar)</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-normal">Otomatis update Luas</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[11px] text-slate-500 dark:text-slate-400 mb-1 block font-mono">Panjang Bangunan (m)</label>
+                                <input type="number" id="dim-panjang" placeholder="Misal: 10" min="1" step="0.5" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-mono font-bold" oninput="calcDimensi()">
+                            </div>
+                            <div>
+                                <label class="text-[11px] text-slate-500 dark:text-slate-400 mb-1 block font-mono">Lebar Bangunan (m)</label>
+                                <input type="number" id="dim-lebar" placeholder="Misal: 6" min="1" step="0.5" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-mono font-bold" oninput="calcDimensi()">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider font-mono">Total Luas Bangunan (m²)</label>
+                        <div class="relative">
+                            <input type="number" id="input-luas" value="72" min="10" max="2000" class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-emerald-500 rounded-2xl px-4 py-3 text-lg font-black text-slate-900 dark:text-white focus:outline-none focus:border-emerald-400 transition font-mono">
+                            <span class="absolute right-4 top-3.5 text-base font-bold text-emerald-500 font-mono">m²</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5">Jika bertingkat, masukkan akumulasi luas seluruh lantai (Lantai 1 + Lantai 2 + Lantai 3).</p>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Jumlah Lantai -->
+                <div class="wizard-step hidden" id="step-3">
+                    <div class="mb-5">
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-tech uppercase tracking-wide">
+                            Langkah 3: Rencana Jumlah Lantai
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Jumlah lantai mempengaruhi pembesian struktur kolom, sloof, balok gantung, dan dak cor beton bertulang.</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex flex-col items-center text-center group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="lantai" value="1" class="hidden" checked>
+                            <div class="text-3xl mb-2 text-emerald-500"><i class="fa-solid fa-house"></i></div>
+                            <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500">1 Lantai</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Pondasi standar batu kali / rollag bata, tanpa plat cor lantai atas.</div>
+                            <span class="mt-3 text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded font-mono font-bold">Faktor Struktur: 1.00x</span>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex flex-col items-center text-center group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="lantai" value="2" class="hidden">
+                            <div class="text-3xl mb-2 text-blue-500"><i class="fa-solid fa-building"></i></div>
+                            <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500">2 Lantai</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Footplate cakar ayam, kolom bertulang ekstra, plat dak cor tebal 12 cm, tangga beton.</div>
+                            <span class="mt-3 text-[10px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-mono font-bold">Faktor Struktur: 1.18x</span>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex flex-col items-center text-center group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="lantai" value="3" class="hidden">
+                            <div class="text-3xl mb-2 text-amber-500"><i class="fa-solid fa-city"></i></div>
+                            <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500">3 Lantai</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Perhitungan gempa SNI 1726, pondasi strauss / borepile, balok girder heavy-duty.</div>
+                            <span class="mt-3 text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-mono font-bold">Faktor Struktur: 1.35x</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- STEP 4: Target Anggaran -->
+                <div class="wizard-step hidden" id="step-4">
+                    <div class="mb-5">
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-tech uppercase tracking-wide">
+                            Langkah 4: Target Anggaran yang Disiapkan
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Tentukan pagu dana maksimal yang Anda siapkan untuk proyek ini.</p>
+                    </div>
+
+                    <div class="mb-5">
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wider font-mono">Pilihan Cepat Target Budget</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <button type="button" onclick="setQuickBudget(200000000)" class="py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white transition shadow-sm cursor-pointer font-mono">Rp 200 Juta</button>
+                            <button type="button" onclick="setQuickBudget(350000000)" class="py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white transition shadow-sm cursor-pointer font-mono">Rp 350 Juta</button>
+                            <button type="button" onclick="setQuickBudget(500000000)" class="py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white transition shadow-sm cursor-pointer font-mono">Rp 500 Juta</button>
+                            <button type="button" onclick="setQuickBudget(750000000)" class="py-2.5 px-3 rounded-xl text-xs font-bold border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white transition shadow-sm cursor-pointer font-mono">Rp 750 Juta</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider font-mono">Nominal Target Budget (Rp)</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-3 text-base font-bold text-slate-400 font-mono">Rp</span>
+                            <input type="number" id="input-budget" value="350000000" step="5000000" class="w-full bg-slate-50 dark:bg-slate-950 border-2 border-slate-300 dark:border-slate-700 rounded-2xl pl-12 pr-4 py-3 text-lg font-black text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition font-mono">
+                        </div>
+                        <div id="budget-formatted" class="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-2 font-mono">Terbaca: Rp 350.000.000 (Tiga Ratus Lima Puluh Juta Rupiah)</div>
+                    </div>
+                </div>
+
+                <!-- STEP 5: Lokasi Pembangunan -->
+                <div class="wizard-step hidden" id="step-5">
+                    <div class="mb-5">
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-tech uppercase tracking-wide">
+                            Langkah 5: Wilayah & Lokasi Pembangunan
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Upah tukang dan harga material pokok (semen, pasir, besi beton) sangat dipengaruhi zona geografis.</p>
+                    </div>
+
+                    <div class="space-y-3.5">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider font-mono">Zona Wilayah Konstruksi (Indonesia)</label>
+                            <select id="select-zona" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-mono font-bold transition" onchange="updateZonaDesc()">
+                                <option value="1.15" data-zona="A">Zona A: Jabodetabek (Jakarta, Bogor, Depok, Tangerang, Bekasi) [Indeks 1.15x]</option>
+                                <option value="1.05" data-zona="B" selected>Zona B: Kota Besar Jawa (Bandung, Surabaya, Semarang, Malang, Yogyakarta, Solo) [Indeks 1.05x]</option>
+                                <option value="1.00" data-zona="C">Zona C: Kota/Kabupaten Menengah Jawa (Kudus, Pati, Cirebon, Purwokerto, dsb.) [Indeks 1.00x]</option>
+                                <option value="1.10" data-zona="D">Zona D: Kota Besar Luar Jawa (Medan, Makassar, Palembang, Denpasar, Balikpapan) [Indeks 1.10x]</option>
+                                <option value="1.25" data-zona="E">Zona E: Wilayah Kepulauan / Luar Jawa Remote (Maluku, Papua, NTT, Kepri) [Indeks 1.25x]</option>
+                            </select>
+                        </div>
+
+                        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 font-mono leading-relaxed" id="zona-info-box">
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">Catatan Regional:</span> Wilayah ini memiliki standar upah tukang harian Rp 120rb - Rp 160rb dan logistik material relatif lancar.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 6: Akses Lokasi & Logistik Jalan -->
+                <div class="wizard-step hidden" id="step-6">
+                    <div class="mb-5">
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-tech uppercase tracking-wide">
+                            Langkah 6: Aksesibilitas Jalan Masuk
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Kondisi jalan menentukan apakah material bisa didrop langsung di depan proyek atau perlu ongkos langsir.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex items-start gap-3.5 group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="akses" value="1.00" class="mt-1" checked>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500 flex items-center gap-2">
+                                    <span>🚛 Sangat Mudah (Jalan > 4 Meter)</span>
+                                    <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-mono font-bold">Biaya Langsir: Rp 0</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Truk engkel, tronton, dan truk mixer (molen cor ready-mix) leluasa masuk dan bongkar tepat di lokasi proyek.</p>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex items-start gap-3.5 group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="akses" value="1.03" class="mt-1">
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500 flex items-center gap-2">
+                                    <span>🚗 Cukup Mudah (Jalan 3 - 4 Meter)</span>
+                                    <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded font-mono font-bold">+3% Handling</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Jalan selebar 1 mobil. Truk kecil (colt diesel) bisa masuk bergantian, namun butuh koordinasi lingkungan saat bongkar muat.</p>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex items-start gap-3.5 group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="akses" value="1.08" class="mt-1">
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500 flex items-center gap-2">
+                                    <span>🛵 Sulit / Gang Sempit (&lt; 3 Meter)</span>
+                                    <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded font-mono font-bold">+8% Ongkos Langsir</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Truk harus bongkar di jalan utama. Material harus diangkut atau dilansir ulang menggunakan gerobak argo atau motor roda tiga.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- STEP 7: Kesiapan & Kontur Lahan -->
+                <div class="wizard-step hidden" id="step-7">
+                    <div class="mb-5">
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-tech uppercase tracking-wide">
+                            Langkah 7: Kondisi Fisik & Kontur Lahan
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Kondisi tanah awal menentukan biaya pekerjaan tanah, pematangan lahan, dan perkuatan sub-struktur.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex items-start gap-3.5 group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="lahan" value="1.00" class="mt-1" checked>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500 flex items-center gap-2">
+                                    <span>✅ Lahan Siap Bangun & Datar</span>
+                                    <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-mono font-bold">Normal</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Elevasi tanah rata setara muka jalan, tanah padat, tidak ada puing atau pohon besar yang perlu dibongkar.</p>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex items-start gap-3.5 group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="lahan" value="1.04" class="mt-1">
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500 flex items-center gap-2">
+                                    <span>🚜 Perlu Perapihan / Urug Rendah (&lt; 50 cm)</span>
+                                    <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded font-mono font-bold">+4% Land Clearing</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Lahan sedikit lebih rendah dari jalan, perlu pembersihan semak/sisa bangunan lama dan penambahan tanah urug padas tipis.</p>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex items-start gap-3.5 group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="lahan" value="1.10" class="mt-1">
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500 flex items-center gap-2">
+                                    <span>⛰️ Kontur Ekstrem / Bekas Rawa / Lereng</span>
+                                    <span class="text-[10px] bg-slate-200 dark:bg-slate-800 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded font-mono font-bold">+10% Sub-struktur</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Membutuhkan cut & fill, dinding penahan tanah (retaining wall), cerucuk/strauss pile, atau perkuatan pondasi ekstra.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- STEP 8: Kualitas Finishing & Material -->
+                <div class="wizard-step hidden" id="step-8">
+                    <div class="mb-5">
+                        <h2 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-tech uppercase tracking-wide">
+                            Langkah 8: Standar Mutu Finishing & Desain
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">Spesifikasi material arsitektural dan interior menjadi penentu utama biaya akhir per meter persegi.</p>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex items-start gap-3.5 group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="finishing" value="3200000" class="mt-1" checked>
+                            <div class="w-full">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500">Kelas Standar (Sederhana & Fungsional)</span>
+                                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">± Rp 3,2 Jt / m² Base</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Lantai keramik 40x40/50x50, cat tembok standar, kusen aluminium silver, atap genteng beton/metal pasir, sanitary standar lokal.</p>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex items-start gap-3.5 group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="finishing" value="4300000" class="mt-1">
+                            <div class="w-full">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500">Kelas Menengah (Nyaman & Modern Populer)</span>
+                                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">± Rp 4,3 Jt / m² Base</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Granit tile 60x60, cat Jotun/Dulux, kusen aluminium powder coating/kayu kamper, genteng keramik, sanitary monoblok Toto/American Standard.</p>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl transition flex items-start gap-3.5 group has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 dark:has-[:checked]:bg-emerald-950/20 shadow-sm">
+                            <input type="radio" name="finishing" value="6200000" class="mt-1">
+                            <div class="w-full">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-slate-900 dark:text-slate-100 group-hover:text-emerald-500">Kelas Mewah / Premium (Luxury Custom)</span>
+                                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono">± Rp 6,2 Jt / m² Base</span>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Marmer import/granit slab besar, smart home lighting, pintu kayu jati oven, sanitary premium Kohler/Grohe, fasad batu alam & kisi-kisi WPC.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex items-center justify-between pt-2">
+                <button type="button" id="prev-btn" onclick="prevStep()" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition disabled:opacity-30 disabled:cursor-not-allowed font-mono shadow-sm">
+                    ← Kembali
+                </button>
+
+                <button type="button" id="next-btn" onclick="nextStep()" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-xs sm:text-sm hover:from-emerald-400 hover:to-teal-400 shadow-lg shadow-emerald-500/25 transition flex items-center gap-2 font-tech uppercase cursor-pointer">
+                    <span>Lanjut Langkah Berikutnya</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- LOADING / ANALYZING SCREEN -->
+        <div id="analyzing-section" class="hidden text-center py-16 space-y-6">
+            <div class="relative w-20 h-20 mx-auto">
+                <div class="w-20 h-20 rounded-full border-4 border-slate-300 dark:border-slate-800 border-t-emerald-500 animate-spin"></div>
+                <div class="absolute inset-0 flex items-center justify-center text-2xl text-emerald-500"><i class="fa-solid fa-gears"></i></div>
+            </div>
+            <div>
+                <h3 class="text-xl font-black text-slate-900 dark:text-white mb-2 font-tech uppercase tracking-wide">Menganalisis Parameter Konstruksi...</h3>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto font-mono" id="analyzing-status">Mengkalkulasi koefisien zona wilayah & aksesibilitas material...</p>
+            </div>
+            <div class="w-48 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full mx-auto overflow-hidden">
+                <div class="bg-emerald-400 h-full w-full animate-pulse"></div>
+            </div>
+        </div>
+
+        <!-- RESULT DASHBOARD SECTION -->
+        <div id="result-section" class="hidden space-y-6">
+
+            <!-- Back / Recalculate Bar -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 no-print bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <button type="button" onclick="editWizard()" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5 transition font-mono">
+                    <i class="fa-solid fa-arrow-left"></i> Ubah Parameter / Hitung Ulang
+                </button>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="printCalculationSheet()" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-200 transition flex items-center gap-1.5 shadow-sm font-mono cursor-pointer">
+                        <i class="fa-solid fa-file-pdf text-rose-500"></i> Cetak / Simpan PDF
+                    </button>
+                    <button type="button" onclick="exportWordDoc()" class="px-3 py-1.5 rounded-xl bg-blue-100 hover:bg-blue-200 dark:bg-blue-950/60 dark:hover:bg-blue-900 border border-blue-400 dark:border-blue-700 text-blue-900 dark:text-blue-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm font-mono cursor-pointer">
+                        <i class="fa-solid fa-file-word text-blue-500"></i> Unduh File Word (.doc)
+                    </button>
+                    <button type="button" onclick="copySummary()" class="px-3 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 border border-emerald-400 dark:border-emerald-700 text-emerald-900 dark:text-emerald-300 text-xs font-bold transition flex items-center gap-1.5 shadow-sm font-mono cursor-pointer">
+                        <i class="fa-solid fa-clipboard text-emerald-500"></i> Salin Ringkasan
+                    </button>
+                </div>
+            </div>
+
+            <!-- WHATSAPP EXPORT SUITE BAR -->
+            <div class="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 border-2 border-emerald-500/70 p-4 sm:p-5 rounded-3xl shadow-xl no-print">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 shadow">
+                            <i class="fa-brands fa-whatsapp"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-black text-sm text-white font-tech uppercase tracking-wide">Kirim Hasil Estimasi ke WhatsApp</h4>
+                            <p class="text-xs text-slate-300 font-mono">Format laporan komputasi resmi langsung terkirim ke No. WA klien / mandor / diri sendiri.</p>
+                        </div>
+                    </div>
+                    <div class="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="targetWhatsAppNo" placeholder="No. WA: 082231036047" value="082231036047"
+                            class="px-3.5 py-2 rounded-xl bg-slate-950 border border-emerald-500/60 text-white font-mono text-xs font-bold focus:outline-none focus:border-emerald-400 shadow-inner">
+                        <button type="button" onclick="sendToWhatsApp()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs font-tech uppercase transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30 cursor-pointer">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> Kirim ke WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN RESULTS CARDS -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-950 border-2 border-emerald-500/50 rounded-3xl p-5 shadow-xl relative overflow-hidden transition-colors">
+                    <div class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1 flex items-center justify-between font-mono">
+                        <span>Estimasi Biaya Utama</span>
+                        <span class="bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded text-[10px]">Expected</span>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-tech" id="out-expected-budget">
+                        Rp 0
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">Biaya konstruksi fisik utama sesuai akumulasi parameter yang dipilih.</div>
+                </div>
+
+                <div class="bg-emerald-50/70 dark:bg-gradient-to-b dark:from-emerald-950/30 dark:to-slate-950 border-2 border-teal-500/60 rounded-3xl p-5 shadow-xl relative overflow-hidden transition-colors">
+                    <div class="text-[11px] font-bold text-teal-700 dark:text-teal-300 uppercase tracking-wider mb-1 flex items-center justify-between font-mono">
+                        <span>Safe Budget (Dana Aman)</span>
+                        <span class="bg-teal-500/20 text-teal-800 dark:text-teal-300 text-[10px] px-2 py-0.5 rounded-full font-bold">+10% Contingency</span>
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-black text-teal-800 dark:text-teal-300 tracking-tight font-tech" id="out-safe-budget">
+                        Rp 0
+                    </div>
+                    <div class="text-xs text-slate-600 dark:text-slate-400 mt-2 font-medium">Termasuk dana cadangan darurat (contingency) agar anti-boncos.</div>
+                </div>
+
+                <div class="bg-white dark:bg-gradient-to-b dark:from-slate-900 dark:to-slate-950 border border-slate-300 dark:border-slate-800 rounded-3xl p-5 shadow-xl relative overflow-hidden transition-colors">
+                    <div class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1 font-mono">
+                        Estimasi Biaya per m²
+                    </div>
+                    <div class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight font-tech" id="out-biaya-m2">
+                        Rp 0 / m²
+                    </div>
+                    <div class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">Rata-rata biaya riil per meter persegi luas terbangun.</div>
+                </div>
+            </div>
+
+            <!-- BUDGET HEALTH CHECK & DURATION -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-sm transition-colors">
+                    <div class="flex items-center gap-2 mb-2 font-mono">
+                        <span class="text-lg" id="health-icon">🛡️</span>
+                        <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase font-tech">Budget Health Check</h4>
+                        <span class="text-[10px] px-2 py-0.5 rounded font-bold ml-auto" id="health-badge">Aman</span>
+                    </div>
+                    <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium" id="health-text">
+                        Anggaran Anda memadai untuk spesifikasi yang dipilih dengan toleransi material yang sehat.
+                    </p>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-sm transition-colors">
+                    <div class="flex items-center gap-2 mb-2 font-mono">
+                        <span class="text-lg">⏱️</span>
+                        <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase font-tech">Perkiraan Durasi & Tim</h4>
+                        <span class="text-[10px] px-2 py-0.5 rounded font-bold bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 ml-auto" id="durasi-badge">~ 4-5 Bulan</span>
+                    </div>
+                    <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium" id="durasi-text">
+                        Estimasi 1 mandor, 2-3 tukang ahli, dan 3-4 laden/kenek untuk target penyelesaian optimal.
+                    </p>
+                </div>
+            </div>
+
+            <!-- RINCIAN ALOKASI 15 PEKERJAAN KONSTRUKSI -->
+            <div class="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-3xl border border-slate-300 dark:border-slate-800 shadow-xl transition-colors">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-slate-200 dark:border-slate-800 gap-2">
+                    <div>
+                        <h3 class="text-base font-black text-slate-900 dark:text-white flex items-center gap-2 font-tech uppercase tracking-wide">
+                            <i class="fa-solid fa-list-check text-emerald-500"></i> Alokasi 15 Pos Pekerjaan Konstruksi
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-mono">Panduan proporsi anggaran saat bernegosiasi dengan mandor atau kontraktor.</p>
+                    </div>
+                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-500/30">
+                        Standar SNI & Praktik Lapangan
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-700 dark:text-slate-300 font-medium">
+                        <thead class="text-[11px] text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 font-mono">
+                            <tr>
+                                <th scope="col" class="py-2.5 px-3">No</th>
+                                <th scope="col" class="py-2.5 px-3">Pos Pekerjaan Fisik</th>
+                                <th scope="col" class="py-2.5 px-2 text-center">Porsi (%)</th>
+                                <th scope="col" class="py-2.5 px-3 text-right">Alokasi Biaya (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="breakdown-tbody" class="divide-y divide-slate-200 dark:divide-slate-800/60 font-mono">
+                            <!-- Rendered via JS -->
+                        </tbody>
+                        <tfoot class="border-t-2 border-slate-900 dark:border-slate-700 font-black text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-950/60 font-mono">
+                            <tr>
+                                <td colspan="2" class="py-3 px-3">Total Konstruksi Fisik Utama</td>
+                                <td class="py-3 px-2 text-center text-emerald-600 dark:text-emerald-400">100%</td>
+                                <td class="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400 text-sm" id="table-total-nominal">Rp 0</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- RINGKASAN PARAMETER INPUT -->
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-300 dark:border-slate-800 text-xs transition-colors">
+                <h4 class="font-bold text-slate-800 dark:text-slate-200 mb-3 uppercase tracking-wider text-[11px] font-mono">
+                    <i class="fa-solid fa-clipboard-check text-emerald-500 mr-1"></i> Ringkasan Parameter yang Dimasukkan
+                </h4>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-slate-700 dark:text-slate-300 font-mono" id="summary-params-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-500/30 text-amber-900 dark:text-amber-200/90 text-xs leading-relaxed font-sans">
+                <span class="font-bold font-mono">⚠️ Catatan & Batasan Penggunaan:</span>
+                Kalkulator ini dirancang sebagai <em>early budget feasibility study</em> (studi kelayakan anggaran awal) bagi pemilik rumah agar memiliki acuan realistis sebelum tender/negosiasi pekerjaan. Kalkulator ini bukan pengganti <strong>Rencana Anggaran Biaya (RAB) teknis terinci</strong> berbasis gambar kerja DED (Detail Engineering Design) dan survei harga bahan setempat.
+            </div>
+
+        </div>
+
+    </main>
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-300 dark:bg-[#070d1e] dark:text-slate-400 border-t border-slate-700 dark:border-slate-800 py-6 px-3 sm:px-5 md:px-6 lg:px-8 xl:px-10 mt-auto text-xs sm:text-sm font-mono transition-colors no-print">
+        <div class="w-full flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+            <div>
+                <p class="font-bold text-white text-sm font-tech">Budget Rumah Starter Kit Pro V2.6 &copy; 2026</p>
+                <p class="text-xs text-slate-400 mt-0.5">Civil Engineering & Construction Feasibility Architecture</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center justify-center gap-3.5 text-xs sm:text-sm">
+                <a href="https://api.whatsapp.com/send/?phone=6282231036047&text=Halo+Pak+Mohamad+Hartadi" target="_blank" rel="noopener noreferrer" class="text-emerald-400 hover:underline flex items-center gap-1.5 font-bold">
+                    <i class="fa-brands fa-whatsapp text-base"></i> 0822-3103-6047
+                </a>
+                <span class="text-slate-600">•</span>
+                <a href="https://www.facebook.com/hartadi.kds" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline flex items-center gap-1.5 font-bold">
+                    <i class="fa-brands fa-facebook text-base"></i> Facebook
+                </a>
+                <span class="text-slate-600">•</span>
+                <a href="https://newbieonline7.blogspot.com/" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:underline flex items-center gap-1.5 font-bold">
+                    <i class="fa-solid fa-globe text-base"></i> Blog Resmi
+                </a>
+            </div>
+
+            <div class="text-xs text-slate-400">
+                <span>Divalidasi dengan Standar Praktik Konstruksi & SNI Indonesia</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- HELP SYSTEM MODAL -->
+    <div id="helpModal" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto no-print">
+        <div class="bg-white dark:bg-slate-900 border-2 border-emerald-500 rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl text-slate-900 dark:text-slate-100 font-sans animate-fade-in">
+            <div class="bg-slate-100 dark:bg-slate-950 px-5 sm:px-6 py-4 border-b border-slate-300 dark:border-slate-800 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2.5 text-emerald-600 dark:text-emerald-400 font-black font-tech text-sm sm:text-base tracking-wide uppercase">
+                    <i class="fa-solid fa-circle-question text-xl"></i>
+                    <h3>HELP SYSTEM // PANDUAN ESTIMASI & AMBANG BATAS BUDGET</h3>
+                </div>
+                <button onclick="toggleHelpModal(false)" class="text-slate-400 hover:text-rose-500 transition-colors text-2xl font-black p-1 cursor-pointer leading-none">&times;</button>
+            </div>
+            
+            <div class="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 px-4 pt-2.5 gap-2 text-xs sm:text-sm font-bold overflow-x-auto hide-scrollbar font-mono">
+                <button onclick="switchHelpTab('metrics')" id="tabBtn-metrics" class="px-4 py-2 rounded-t-xl bg-emerald-600 text-white font-black transition-all flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-chart-pie"></i> Metrik & Batasan Biaya
+                </button>
+                <button onclick="switchHelpTab('solutions')" id="tabBtn-solutions" class="px-4 py-2 rounded-t-xl text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-screwdriver-wrench"></i> Matriks 15 Pos Pekerjaan
+                </button>
+                <button onclick="switchHelpTab('references')" id="tabBtn-references" class="px-4 py-2 rounded-t-xl text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-book-open"></i> Pustaka Standar & Link
+                </button>
+            </div>
+
+            <div class="p-5 sm:p-6 overflow-y-auto custom-scroll space-y-4 text-xs sm:text-sm">
+                <div id="helpTab-metrics" class="space-y-4">
+                    <p class="text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-300 dark:border-slate-800">
+                        Sistem estimasi <strong class="text-emerald-600 dark:text-emerald-400">Budget Rumah Starter Kit Pro</strong> menerapkan formula parameter konstruksi terkalibrasi untuk mencegah pembengkakan biaya (*anti-boncos*):
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 font-mono text-xs">
+                        <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-emerald-400 dark:border-emerald-900/60 space-y-2">
+                            <span class="text-emerald-600 dark:text-emerald-400 font-black text-sm block uppercase flex items-center gap-1.5">
+                                <i class="fa-solid fa-calculator"></i> 1. Formula Biaya Utama
+                            </span>
+                            <p class="text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                                Expected = Luas (m²) × Base Rate × Multiplier Lantai × Zone Multiplier × Akses Jalan × Kondisi Lahan.
+                            </p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-teal-400 dark:border-teal-900/60 space-y-2">
+                            <span class="text-teal-600 dark:text-teal-400 font-black text-sm block uppercase flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved"></i> 2. Dana Cadangan (Contingency)
+                            </span>
+                            <p class="text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
+                                Safe Budget = Expected Budget + 10% Dana Aman untuk mengantisipasi fluktuasi harga bahan dan pekerjaan tambah tak terduga.
+                            </p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-amber-400 dark:border-amber-900/60 space-y-2 md:col-span-2">
+                            <span class="text-amber-600 dark:text-amber-400 font-black text-sm block uppercase flex items-center gap-1.5">
+                                <i class="fa-solid fa-heart-pulse"></i> 3. Kriteria Budget Health Check
+                            </span>
+                            <ul class="space-y-1.5 text-slate-700 dark:text-slate-300 font-medium">
+                                <li>• <strong class="text-emerald-600 dark:text-emerald-400">Sangat Sehat</strong>: Target budget &ge; Safe Budget (+10% margin aman).</li>
+                                <li>• <strong class="text-amber-600 dark:text-amber-400">Cukup / Ketat</strong>: Expected Budget &le; Target budget &lt; Safe Budget (risiko boncos tipis).</li>
+                                <li>• <strong class="text-rose-600 dark:text-rose-500">Rawan Boncos</strong>: Target budget &lt; Expected Budget (wajib efisiensi luas atau spesifikasi).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="helpTab-solutions" class="hidden space-y-4">
+                    <p class="text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-300 dark:border-slate-800">
+                        Proporsi 15 pos pengerjaan konstruksi standar SNI dan tips negosiasi borongan:
+                    </p>
+                    <div class="space-y-2.5 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                        <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <strong>Pos Struktur (Pondasi & Beton Bertulang ~30%):</strong> Jantung kekuatan rumah. Jangan menghemat mutu besi tulangan atau mutu cor demi keselamatan.
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <strong>Pos Arsitektural (Dinding, Atap, Lantai ~33%):</strong> Area paling fleksibel untuk menghemat biaya (misal: memilih granit 60x60 motif polos daripada marmer).
+                        </div>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <strong>Pos Utilitas (Listrik, Sanitasi & Sanitair ~11%):</strong> Wajib menggunakan pipa tebal (AW) dan kabel standar SNI/LMK agar bebas kebocoran.
+                        </div>
+                    </div>
+                </div>
+
+                <div id="helpTab-references" class="hidden space-y-4">
+                    <p class="text-slate-700 dark:text-slate-300 font-medium leading-relaxed bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-300 dark:border-slate-800">
+                        Akses referensi dan standar resmi konstruksi bangunan gedung Indonesia:
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                        <a href="https://en.wikipedia.org/wiki/Construction_estimating_software" target="_blank" rel="noopener noreferrer" class="p-3 bg-slate-50 dark:bg-slate-950 border border-blue-300 dark:border-blue-900/60 hover:border-blue-500 rounded-2xl flex items-center justify-between group transition">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-brands fa-wikipedia-w text-blue-600 dark:text-blue-400 text-lg"></i>
+                                <div>
+                                    <strong class="text-slate-900 dark:text-white block group-hover:text-blue-500">Cost Estimating</strong>
+                                    <span class="text-[10px] text-slate-500">Ensiklopedia Wikipedia</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-blue-500 text-xs"></i>
+                        </a>
+
+                        <a href="https://www.google.com/search?q=SNI+biaya+bangun+rumah+per+m2" target="_blank" rel="noopener noreferrer" class="p-3 bg-slate-50 dark:bg-slate-950 border border-emerald-300 dark:border-emerald-900/60 hover:border-emerald-500 rounded-2xl flex items-center justify-between group transition">
+                            <div class="flex items-center gap-2.5">
+                                <i class="fa-brands fa-google text-emerald-600 dark:text-emerald-400 text-lg"></i>
+                                <div>
+                                    <strong class="text-slate-900 dark:text-white block group-hover:text-emerald-500">Harga Satuan SNI</strong>
+                                    <span class="text-[10px] text-slate-500">Google Search</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-emerald-500 text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 bg-slate-100 dark:bg-slate-950 border-t border-slate-300 dark:border-slate-800 flex justify-between items-center text-xs font-mono">
+                <span class="text-slate-500">Budget Rumah Starter Kit Pro V2.6</span>
+                <button onclick="toggleHelpModal(false)" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition cursor-pointer">
+                    Tutup Help System
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROGRAMMER IDENTITY MODAL (MOHAMAD HARTADI) -->
+    <div id="devModal" onclick="if(event.target === this) toggleDevModal(false)" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 no-print">
+        <div id="draggableDevCard" class="bg-white dark:bg-slate-900 border-2 border-emerald-500 rounded-3xl max-w-md w-full p-6 shadow-2xl relative flex flex-col text-slate-900 dark:text-slate-100 font-sans select-none">
+            
+            <button type="button" onclick="event.stopPropagation(); toggleDevModal(false);"
+                    class="absolute top-4 right-4 z-30 w-9 h-9 rounded-full bg-slate-100 hover:bg-rose-500 dark:bg-slate-800 dark:hover:bg-rose-600 text-slate-600 hover:text-white dark:text-slate-300 dark:hover:text-white flex items-center justify-center text-lg font-black transition-colors cursor-pointer shadow border border-slate-300 dark:border-slate-700"
+                    title="Tutup Jendela Programmer">
+                <i class="fa-solid fa-xmark pointer-events-none"></i>
+            </button>
+
+            <div id="devDragHandle" class="drag-handle text-center pb-3.5 border-b border-slate-200 dark:border-slate-800 relative cursor-grab active:cursor-grabbing">
+                <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 tracking-widest border border-emerald-500/50 shadow font-mono mb-2">
+                    <i class="fa-solid fa-arrows-up-down-left-right"></i> GESER PANEL
+                </div>
+                
+                <div class="w-20 h-20 mx-auto bg-gradient-to-tr from-emerald-500 via-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center text-slate-950 text-3xl font-black shadow-[0_0_25px_rgba(16,185,129,0.5)] mt-1 mb-2.5 border-2 border-slate-900">
+                    <i class="fa-solid fa-user-tie"></i>
+                </div>
+                
+                <h3 class="text-lg sm:text-xl font-black font-tech text-slate-900 dark:text-white tracking-wider uppercase">IR. MOHAMAD HARTADI (ADI)</h3>
+                <p class="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-1 font-mono">Civil & Geotechnical Engineer // Structural Specialist</p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Spesialisasi: Geoteknik Fondasi, Struktur Sipil, Bendungan, Dinding Penahan & Web Decision Support Systems</p>
+            </div>
+
+            <div class="p-3.5 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 my-4 text-xs font-bold font-mono">
+                <a href="https://api.whatsapp.com/send/?phone=6282231036047&text=Halo+Pak+Mohamad+Hartadi,+saya+tertarik+dengan+aplikasi+Budget+Rumah." target="_blank" rel="noopener noreferrer"
+                    class="flex items-center justify-between p-3 rounded-xl bg-emerald-100/70 hover:bg-emerald-200 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-300 transition group cursor-pointer shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-brands fa-whatsapp text-xl text-emerald-600 dark:text-emerald-400 w-5 text-center"></i>
+                        <span>0822-3103-6047</span>
+                    </div>
+                    <span class="text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1">Kirim WA <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></span>
+                </a>
+
+                <a href="https://www.facebook.com/hartadi.kds" target="_blank" rel="noopener noreferrer"
+                    class="flex items-center justify-between p-3 rounded-xl bg-blue-100/70 hover:bg-blue-200 dark:bg-blue-950/40 dark:hover:bg-blue-900/60 border border-blue-300 dark:border-blue-800 text-blue-900 dark:text-blue-300 transition group cursor-pointer shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-brands fa-facebook text-xl text-blue-600 dark:text-blue-400 w-5 text-center"></i>
+                        <span>facebook.com/hartadi.kds</span>
+                    </div>
+                    <span class="text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1">Buka Profil <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></span>
+                </a>
+
+                <a href="https://newbieonline7.blogspot.com/" target="_blank" rel="noopener noreferrer"
+                    class="flex items-center justify-between p-3 rounded-xl bg-amber-100/70 hover:bg-amber-200 dark:bg-amber-950/40 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-300 transition group cursor-pointer shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-globe text-xl text-amber-600 dark:text-amber-400 w-5 text-center"></i>
+                        <span>newbieonline7.blogspot.com</span>
+                    </div>
+                    <span class="text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-1">Kunjungi Blog <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></span>
+                </a>
+            </div>
+
+            <div class="space-y-3">
+                <div class="text-center text-xs text-slate-500 font-mono">
+                    <span>&copy; 2026 Developed by Ir. Mohamad Hartadi. All rights reserved.</span>
+                </div>
+                <button type="button" onclick="event.stopPropagation(); toggleDevModal(false);"
+                        class="w-full py-2.5 px-4 rounded-xl bg-slate-200 hover:bg-rose-500 hover:text-white dark:bg-slate-800 dark:hover:bg-rose-600 text-slate-800 dark:text-slate-200 font-bold text-xs font-mono transition flex items-center justify-center gap-2 cursor-pointer shadow-sm">
+                    <i class="fa-solid fa-xmark mr-1"></i> TUTUP JENDELA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SMART AI CHATBOT (BUDGET RUMAH SMART CO-PILOT) -->
+    <div id="floatingChatGroup" class="fixed bottom-3 right-3 sm:bottom-5 sm:right-5 z-40 no-print flex flex-col items-end space-y-2">
+        
+        <div id="chatDrawer" class="hidden w-[calc(100vw-24px)] sm:w-[440px] max-w-[460px] h-[580px] max-h-[85vh] bg-white dark:bg-slate-900 border-2 border-emerald-500 rounded-3xl flex-col overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.75)] mb-2 animate-fade-in transition-all">
+            
+            <div class="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 p-3.5 sm:p-4 text-slate-950 flex justify-between items-center shrink-0 shadow">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-slate-950 text-emerald-400 flex items-center justify-center text-base shadow-inner">
+                        <i class="fa-solid fa-robot animate-pulse"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="font-tech text-xs sm:text-sm font-black text-slate-950 tracking-wide truncate">BUDGET RUMAH SMART CO-PILOT</h4>
+                        <span class="text-[10px] text-slate-900 font-mono font-bold block truncate">● REAL-TIME AI & ENCYCLOPEDIA</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-2 shrink-0 font-mono">
+                    <button type="button" onclick="toggleSiriTTS()" id="btnTtsToggle" class="text-slate-950 hover:text-white bg-emerald-400/80 p-2 rounded-xl border border-slate-950/20 cursor-pointer transition-colors shadow-sm" title="Toggle Suara Siri TTS">
+                        <i id="ttsIcon" class="fa-solid fa-headset text-xs"></i>
+                    </button>
+                    <button type="button" onclick="toggleChatDrawer()" class="text-slate-950 hover:text-white px-2 py-1 cursor-pointer font-black text-xl transition-colors">&times;</button>
+                </div>
+            </div>
+
+            <!-- Bar Shortcut Chatbot -->
+            <div class="bg-slate-50 dark:bg-slate-950 p-2 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-1.5 text-[11px] font-mono">
+                <button onclick="handleChatQuery('my aplikasi')" class="px-2.5 py-1 rounded-full bg-purple-100 hover:bg-purple-200 dark:bg-purple-950 dark:hover:bg-purple-900 text-purple-800 dark:text-purple-200 font-bold border border-purple-300 dark:border-purple-800 transition flex items-center gap-1 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-cubes-stacked text-purple-600"></i> My Aplikasi (50+)
+                </button>
+                <button onclick="handleChatQuery('fitur aplikasi')" class="px-2.5 py-1 rounded-full bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-200 font-bold border border-emerald-300 dark:border-emerald-800 transition flex items-center gap-1 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-sliders text-emerald-600"></i> Fitur Aplikasi
+                </button>
+                <button onclick="handleChatQuery('analisis')" class="px-2.5 py-1 rounded-full bg-blue-100 hover:bg-blue-200 dark:bg-blue-950 dark:hover:bg-blue-900 text-blue-900 dark:text-blue-200 font-bold border border-blue-300 dark:border-blue-800 transition flex items-center gap-1 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-chart-line text-blue-600"></i> Analisis Hasil
+                </button>
+                <button onclick="handleChatQuery('programmer')" class="px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-200 font-bold border border-amber-300 dark:border-amber-800 transition flex items-center gap-1 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-user-tie text-amber-600"></i> Dev. Programmer
+                </button>
+                <button onclick="handleChatQuery('alokasi 15 pos')" class="px-2.5 py-1 rounded-full bg-purple-100 hover:bg-purple-200 dark:bg-purple-950 dark:hover:bg-purple-900 text-purple-800 dark:text-purple-200 font-bold border border-purple-300 dark:border-purple-800 transition flex items-center gap-1 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-list-check text-purple-600"></i> 15 Pos SNI
+                </button>
+                <button onclick="handleChatQuery('tips anti boncos')" class="px-2.5 py-1 rounded-full bg-rose-100 hover:bg-rose-200 dark:bg-rose-950 dark:hover:bg-rose-900 text-rose-900 dark:text-rose-200 font-bold border border-rose-300 dark:border-rose-800 transition flex items-center gap-1 shadow-sm cursor-pointer">
+                    <i class="fa-solid fa-shield-halved text-rose-600"></i> Anti-Boncos
+                </button>
+            </div>
+
+            <!-- Chat Message Feed -->
+            <div id="chatMessageFeed" class="flex-1 p-4 overflow-y-auto custom-scroll space-y-3 font-sans text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-slate-50/50 dark:bg-slate-950/50">
+                <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl rounded-tl-none border border-slate-200 dark:border-slate-700 leading-relaxed shadow-sm">
+                    <span class="text-emerald-600 dark:text-emerald-400 font-extrabold text-xs block mb-1 font-mono">
+                        <i class="fa-solid fa-robot mr-1"></i> BUDGET CO-PILOT PRO V2.6:
+                    </span>
+                    Halo! Saya asisten pintar estimasi biaya bangun & renovasi rumah. Anda dapat menanyakan seputar <strong>Fitur Aplikasi</strong>, meninjau <strong>Analisis</strong> kelayakan budget, info <strong>Dev. Programmer</strong>, estimasi material (semen, pasir, bata, besi), atau topik umum apapun untuk penelusuran otomatis ensiklopedia <strong>Wikipedia</strong>, <strong>Google Search</strong>, <strong>Gemini AI</strong>, dan <strong>Copilot</strong>!
+                </div>
+            </div>
+
+            <!-- External Search Links -->
+            <div class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 font-mono">
+                <span class="font-bold">Pustaka & Standar:</span>
+                <div class="flex items-center space-x-2 font-semibold">
+                    <a href="https://id.wikipedia.org/wiki/Rencana_Anggaran_Biaya" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-600 hover:underline">Wikipedia</a>
+                    <span>•</span>
+                    <a href="https://www.google.com/search?q=biaya+bangun+rumah+per+m2" target="_blank" rel="noopener noreferrer" class="hover:text-emerald-600 hover:underline">Google</a>
+                    <span>•</span>
+                    <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 hover:underline">Gemini AI</a>
+                </div>
+            </div>
+
+            <!-- Chat Input Form -->
+            <form onsubmit="onChatFormSubmit(event)" class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex gap-2 shrink-0">
+                <input type="text" id="chatInputText" placeholder="Tanyakan seputar biaya rumah, material, atau topik apapun..." autocomplete="off"
+                    class="flex-1 w-0 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 font-bold placeholder-slate-400 shadow-inner">
+                <button type="submit" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 rounded-xl font-black cursor-pointer flex items-center justify-center shrink-0 shadow-md transition">
+                    <i class="fa-solid fa-paper-plane text-xs sm:text-sm"></i>
+                </button>
+            </form>
+        </div>
+
+        <button type="button" onclick="toggleChatDrawer()" 
+            class="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 border-2 border-slate-950 flex items-center justify-center shadow-[0_10px_30px_rgba(16,185,129,0.6)] cursor-pointer hover:scale-105 transition-transform pointer-events-auto relative">
+            <i id="chatBubbleIcon" class="fa-solid fa-comments text-2xl sm:text-3xl"></i>
+            <span class="absolute top-1 right-1 h-3.5 w-3.5 bg-emerald-400 rounded-full border-2 border-slate-950 animate-ping"></span>
+            <span class="absolute top-1 right-1 h-3.5 w-3.5 bg-emerald-400 rounded-full border-2 border-slate-950"></span>
+        </button>
+    </div>
+
+    <!-- PRINTABLE REPORT CONTAINER FOR PDF EXPORT -->
+    <div id="printableReport" class="hidden p-8 font-sans text-slate-900 bg-white">
+        <div class="border-b-2 border-slate-900 pb-4 mb-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-black tracking-tight text-slate-950 font-tech">LEMBAR ESTIMASI RESMI BIAYA BANGUN & RENOVASI RUMAH</h1>
+                <p class="text-xs text-slate-600 font-mono">Budget Rumah Starter Kit Pro V2.6 // Standar Perhitungan Konstruksi Indonesia</p>
+            </div>
+            <div class="text-right text-xs font-mono">
+                <p><strong>Lead Engineer:</strong> Ir. Mohamad Hartadi (Adi)</p>
+                <p id="printTimestamp"></p>
+            </div>
+        </div>
+        <div id="printContent" class="space-y-4 text-xs leading-relaxed"></div>
+    </div>
+    <!-- JAVASCRIPT LOGIC & 3D ENGINE -->
+    <script>
+        const EARTH_ATMOS_TEXTURE = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg';
+        const EARTH_ATMOS_FALLBACK = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_atmos_2048.jpg';
+        const EARTH_CLOUDS_TEXTURE = 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png';
+        const EARTH_CLOUDS_FALLBACK = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/textures/planets/earth_clouds_1024.png';
+
+        function loadSafeTexture(loader, url, fallbackUrl, callback) {
+            loader.load(url, (tex) => callback(tex), undefined, () => {
+                loader.load(fallbackUrl, (fTex) => callback(fTex), undefined, () => {
+                    callback(createProceduralEarthTexture());
+                });
+            });
+        }
+
+        function createProceduralEarthTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            grad.addColorStop(0, '#0a2342');
+            grad.addColorStop(0.5, '#0c3866');
+            grad.addColorStop(1, '#071830');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#22543d';
+            ctx.beginPath(); ctx.ellipse(220, 180, 80, 60, -0.3, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(290, 320, 65, 100, 0.2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(580, 160, 130, 80, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(550, 290, 75, 90, 0, 0, Math.PI * 2); ctx.fill();
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        let bgScene, bgCamera, bgRenderer, bgGlobe, bgClouds, bgControls;
+        let isScreensaverActive = false;
+        let quoteInterval = null;
+
+        function initBackgroundRealisticEarth() {
+            const container = document.getElementById('earth-3d-bg');
+            if (!container || typeof THREE === 'undefined') return;
+
+            try {
+                bgScene = new THREE.Scene();
+                bgCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+                bgCamera.position.z = 9.5;
+
+                bgRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                bgRenderer.setSize(window.innerWidth, window.innerHeight);
+                bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                container.innerHTML = '';
+                container.appendChild(bgRenderer.domElement);
+
+                if (typeof THREE.OrbitControls !== 'undefined') {
+                    bgControls = new THREE.OrbitControls(bgCamera, bgRenderer.domElement);
+                    bgControls.enableDamping = true;
+                    bgControls.dampingFactor = 0.05;
+                    bgControls.enableZoom = false;
+                    bgControls.enablePan = false;
+                }
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                bgScene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
+                dirLight.position.set(5, 3, 5);
+                bgScene.add(dirLight);
+
+                const textureLoader = new THREE.TextureLoader();
+
+                const earthGeo = new THREE.SphereGeometry(3.5, 64, 64);
+                const earthMat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.1 });
+                bgGlobe = new THREE.Mesh(earthGeo, earthMat);
+                bgScene.add(bgGlobe);
+
+                loadSafeTexture(textureLoader, EARTH_ATMOS_TEXTURE, EARTH_ATMOS_FALLBACK, (tex) => {
+                    earthMat.map = tex;
+                    earthMat.needsUpdate = true;
+                });
+
+                const cloudGeo = new THREE.SphereGeometry(3.53, 64, 64);
+                const cloudMat = new THREE.MeshStandardMaterial({ transparent: true, blending: THREE.AdditiveBlending, opacity: 0.85 });
+                bgClouds = new THREE.Mesh(cloudGeo, cloudMat);
+                bgScene.add(bgClouds);
+
+                loadSafeTexture(textureLoader, EARTH_CLOUDS_TEXTURE, EARTH_CLOUDS_FALLBACK, (cTex) => {
+                    cloudMat.map = cTex;
+                    cloudMat.needsUpdate = true;
+                });
+
+                const animate = function () {
+                    requestAnimationFrame(animate);
+                    bgGlobe.rotation.y += 0.0012;
+                    bgClouds.rotation.y += 0.0018;
+                    if (bgControls) bgControls.update();
+                    bgRenderer.render(bgScene, bgCamera);
+                };
+                animate();
+
+                window.addEventListener('resize', () => {
+                    bgCamera.aspect = window.innerWidth / window.innerHeight;
+                    bgCamera.updateProjectionMatrix();
+                    bgRenderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            } catch (err) {
+                console.warn('Three.js background notice:', err);
+            }
+        }
+
+        function initLoadingRealisticEarth() {
+            const canvas = document.getElementById('loadingEarthCanvas');
+            if (!canvas || typeof THREE === 'undefined') return;
+
+            try {
+                const width = canvas.parentElement.clientWidth || 280;
+                const height = canvas.parentElement.clientHeight || 280;
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+                camera.position.z = 4.2;
+
+                const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+                renderer.setSize(width, height);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+                scene.add(ambientLight);
+                const sunLight = new THREE.DirectionalLight(0xffffff, 1.4);
+                sunLight.position.set(5, 3, 5);
+                scene.add(sunLight);
+
+                const textureLoader = new THREE.TextureLoader();
+
+                const earthGeo = new THREE.SphereGeometry(1.25, 48, 48);
+                const earthMat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0.1 });
+                const globe = new THREE.Mesh(earthGeo, earthMat);
+                scene.add(globe);
+
+                loadSafeTexture(textureLoader, EARTH_ATMOS_TEXTURE, EARTH_ATMOS_FALLBACK, (tex) => {
+                    earthMat.map = tex;
+                    earthMat.needsUpdate = true;
+                });
+
+                const cloudGeo = new THREE.SphereGeometry(1.27, 48, 48);
+                const cloudMat = new THREE.MeshStandardMaterial({ transparent: true, blending: THREE.AdditiveBlending, opacity: 0.85 });
+                const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+                scene.add(cloudMesh);
+
+                loadSafeTexture(textureLoader, EARTH_CLOUDS_TEXTURE, EARTH_CLOUDS_FALLBACK, (cTex) => {
+                    cloudMat.map = cTex;
+                    cloudMat.needsUpdate = true;
+                });
+
+                function render() {
+                    requestAnimationFrame(render);
+                    globe.rotation.y += 0.004;
+                    cloudMesh.rotation.y += 0.006;
+                    renderer.render(scene, camera);
+                }
+                render();
+            } catch (e) {
+                console.warn('Loading 3D Earth notice:', e);
+            }
+        }
+
+        let loadingProgress = 0;
+        let isLoadedDismissed = false;
+
+        const progressInterval = setInterval(() => {
+            if (isLoadedDismissed) { clearInterval(progressInterval); return; }
+            loadingProgress += Math.floor(Math.random() * 20) + 15;
+            const pBar = document.getElementById('loadingProgressBar');
+            const pTxt = document.getElementById('loadingPercent');
+            const sTxt = document.getElementById('loadingStatusText');
+
+            if (loadingProgress >= 100) {
+                loadingProgress = 100;
+                clearInterval(progressInterval);
+                if (pBar) pBar.style.width = '100%';
+                if (pTxt) pTxt.innerText = '100%';
+                if (sTxt) sTxt.innerText = 'Engine Estimasi & 8 Langkah Wizard Siap Digunakan.';
+                setTimeout(dismissLoadingScreen, 250);
+            } else {
+                if (pBar) pBar.style.width = loadingProgress + '%';
+                if (pTxt) pTxt.innerText = loadingProgress + '%';
+                if (loadingProgress > 30 && loadingProgress < 70) {
+                    if (sTxt) sTxt.innerText = 'Mengkalibrasi Harga Material, Upah Regional & Faktor Lantai...';
+                } else if (loadingProgress >= 70) {
+                    if (sTxt) sTxt.innerText = 'Menyiapkan modul 15 pos pekerjaan konstruksi & ekspor WA/Word...';
+                }
+            }
+        }, 110);
+
+        function dismissLoadingScreen() {
+            if (isLoadedDismissed) return;
+            isLoadedDismissed = true;
+            if (typeof progressInterval !== 'undefined') clearInterval(progressInterval);
+
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 400);
+            }
+        }
+        setTimeout(dismissLoadingScreen, 2200);
+
+        function updateLiveClock() {
+            const now = new Date();
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+            const dayName = days[now.getDay()];
+            const dateNum = now.getDate();
+            const monthName = months[now.getMonth()];
+            const yearNum = now.getFullYear();
+
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            const timeStr = hh + ':' + mm + ':' + ss;
+
+            const fullClockStr = dayName + ', ' + dateNum + ' ' + monthName + ' ' + yearNum + ' • ' + timeStr + ' WIB';
+
+            const headerClock = document.getElementById('headerLiveClock');
+            if (headerClock) headerClock.innerText = fullClockStr;
+
+            const loadClock = document.getElementById('loadingClock');
+            if (loadClock) loadClock.innerText = fullClockStr;
+
+            const ssClock = document.getElementById('screensaverClock');
+            if (ssClock) ssClock.innerText = timeStr;
+            const ssDate = document.getElementById('screensaverDate');
+            if (ssDate) ssDate.innerText = dayName + ', ' + dateNum + ' ' + monthName + ' ' + yearNum;
+        }
+        setInterval(updateLiveClock, 1000);
+        updateLiveClock();
+
+        const screensaverQuotes = [
+            { quote: "Membangun rumah idaman bermula dari perencanaan anggaran yang cermat, disiplin pos pengerjaan, dan pemilihan struktur yang kokoh.", author: "Ir. Mohamad Hartadi • Rekayasa Geoteknik & Struktur Sipil" },
+            { quote: "Rencana Anggaran Biaya (RAB) yang transparan dan amanah adalah jembatan kepercayaan antara pemilik rumah, mandor, dan tukang.", author: "Insinyur Sipil Nusantara" },
+            { quote: "Jangan pernah mengorbankan mutu pondasi dan pembesian beton bertulang demi mengejar kemewahan finishing sesaat.", author: "Prinsip Keselamatan Bangunan Gedung" },
+            { quote: "Rumah yang nyaman dan berkah adalah rumah yang dibangun tanpa beban utang tak terduga (Anti-Boncos).", author: "Filosofi Konstruksi Keluarga" }
+        ];
+        let currentQuoteIndex = 0;
+
+        function toggleScreensaver(show) {
+            const el = document.getElementById('screensaverOverlay');
+            const earth = document.getElementById('earth-3d-bg');
+            if (show) {
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+                if (earth) {
+                    earth.classList.remove('opacity-10', 'dark:opacity-20', 'z-[-1]', 'pointer-events-none');
+                    earth.classList.add('opacity-85', 'dark:opacity-90', 'z-[92]');
+                }
+                if (bgControls) {
+                    bgControls.enableZoom = true;
+                    bgControls.enablePan = true;
+                }
+                rotateQuote();
+                quoteInterval = setInterval(rotateQuote, 8000);
+            } else {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+                if (earth) {
+                    earth.classList.add('opacity-10', 'dark:opacity-20', 'z-[-1]', 'pointer-events-none');
+                    earth.classList.remove('opacity-85', 'dark:opacity-90', 'z-[92]');
+                }
+                if (bgControls) {
+                    bgControls.enableZoom = false;
+                    bgControls.enablePan = false;
+                }
+                if (quoteInterval) clearInterval(quoteInterval);
+            }
+        }
+
+        function closeScreensaver(e) {
+            if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                toggleScreensaver(false);
+            }
+        }
+
+        function rotateQuote() {
+            const el = document.getElementById('screensaverQuote');
+            if (el) {
+                currentQuoteIndex = (currentQuoteIndex + 1) % screensaverQuotes.length;
+                el.style.opacity = '0';
+                setTimeout(() => {
+                    el.innerText = '"' + screensaverQuotes[currentQuoteIndex].quote + '"';
+                    el.style.opacity = '1';
+                }, 300);
+            }
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                icon.className = "fa-solid fa-moon text-sm";
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                icon.className = "fa-solid fa-sun text-sm";
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                toggleScreensaver(false);
+                toggleHelpModal(false);
+                toggleDevModal(false);
+                const drawer = document.getElementById('chatDrawer');
+                if (drawer && !drawer.classList.contains('hidden')) toggleChatDrawer();
+            }
+        });
+
+        function toggleHelpModal(show) {
+            document.getElementById('helpModal').classList.toggle('hidden', !show);
+        }
+
+        let devCardTranslateX = 0, devCardTranslateY = 0;
+        function toggleDevModal(show) {
+            const modal = document.getElementById('devModal');
+            const panel = document.getElementById('draggableDevCard');
+            if (!modal) return;
+
+            if (show) {
+                devCardTranslateX = 0;
+                devCardTranslateY = 0;
+                if (panel) panel.style.transform = '';
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function switchHelpTab(tabName) {
+            ['metrics', 'solutions', 'references'].forEach(t => {
+                const elContent = document.getElementById('helpTab-' + t);
+                const elBtn = document.getElementById('tabBtn-' + t);
+                if (t === tabName) {
+                    elContent.classList.remove('hidden');
+                    elBtn.className = "px-4 py-2 rounded-t-xl bg-emerald-600 text-white font-black transition-all flex items-center gap-1.5 cursor-pointer";
+                } else {
+                    elContent.classList.add('hidden');
+                    elBtn.className = "px-4 py-2 rounded-t-xl text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5 cursor-pointer";
+                }
+            });
+        }
+
+        function initProgrammerDraggable() {
+            const handle = document.getElementById('devDragHandle');
+            const panel = document.getElementById('draggableDevCard');
+            if (!handle || !panel) return;
+
+            let isDragging = false, startX = 0, startY = 0;
+
+            const onStart = (e) => {
+                if (e.target.closest('button') || e.target.closest('a') || e.target.closest('input')) return;
+                isDragging = true;
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                startX = clientX;
+                startY = clientY;
+                panel.style.transition = 'none';
+            };
+
+            const onMove = (e) => {
+                if (!isDragging) return;
+                const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+                const deltaX = clientX - startX;
+                const deltaY = clientY - startY;
+                panel.style.transform = "translate(" + (devCardTranslateX + deltaX) + "px, " + (devCardTranslateY + deltaY) + "px)";
+            };
+
+            const onEnd = (e) => {
+                if (!isDragging) return;
+                isDragging = false;
+                const clientX = e.type.includes('touch') ? (e.changedTouches ? e.changedTouches[0].clientX : startX) : e.clientX;
+                const clientY = e.type.includes('touch') ? (e.changedTouches ? e.changedTouches[0].clientY : startY) : e.clientY;
+                devCardTranslateX += (clientX - startX);
+                devCardTranslateY += (clientY - startY);
+                panel.style.transition = '';
+            };
+
+            handle.addEventListener('mousedown', onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+
+            handle.addEventListener('touchstart', onStart, { passive: true });
+            document.addEventListener('touchmove', onMove, { passive: true });
+            document.addEventListener('touchend', onEnd);
+        }
+
+        
+        // DIREKTORI 50+ MY APLIKASI IR. MOHAMAD HARTADI (GITHUB)
+        const myAppsDirectory = [
+            { u: "https://adikds.github.io/jarvis-ai/", i: "fa-robot", n: "JARVIS AI Assistant", cat: "AI & Automation" },
+            { u: "https://adikds.github.io/edu-market-pro/", i: "fa-graduation-cap", n: "EduMarket Pro", cat: "Education & Market" },
+            { u: "https://adikds.github.io/iptv-terminal/", i: "fa-tv", n: "IPTV Terminal", cat: "Media & Streaming" },
+            { u: "https://adikds.github.io/TV-streaming-live/", i: "fa-signal", n: "TV Streaming Live", cat: "Media & Streaming" },
+            { u: "https://adikds.github.io/Al-Quran-Karim/", i: "fa-book-quran", n: "Al-Quran Karim", cat: "Islamic & Quran" },
+            { u: "https://adikds.github.io/-MEGA-ATLAS-FKG/", i: "fa-tooth", n: "Mega Atlas FKG", cat: "Medical & Dentistry" },
+            { u: "https://adi-kudus.github.io/InaTEWS-Pro-v4.5-/", i: "fa-wave-square", n: "InaTEWS Tsunami Alert", cat: "Disaster & GIS" },
+            { u: "https://adikds.github.io/MONITORING-PREDIKSI-STATUS-EI-NI-O-LA-NI-A/", i: "fa-temperature-half", n: "El Nino & La Nina", cat: "Meteorology & Climate" },
+            { u: "https://adikds.github.io/MONITORING-PREDIKSI-ANGIN-MUSON-INDONESIA/", i: "fa-wind", n: "Angin Muson Indonesia", cat: "Meteorology & Climate" },
+            { u: "https://adikds.github.io/INTEGRATED-DAM-ANALYTICS-ASSESSMENT-SYSTEM/", i: "fa-water", n: "Dam Analytics System", cat: "Water Resources" },
+            { u: "https://adikds.github.io/WAY-APU-DAM/", i: "fa-building-shield", n: "Way Apu Dam Assessment", cat: "Water Resources" },
+            { u: "https://adikds.github.io/EVENT-DRIVEN-ARCHITECTURE-FOR-AI-AGENTS/", i: "fa-sitemap", n: "EDA AI Agents", cat: "AI & System Architecture" },
+            { u: "https://adi-kudus.github.io/GeoStruct_Pro_Master_Edition/", i: "fa-mountain", n: "GeoStruct Pro Master Edition", cat: "Geotechnical & Civil" },
+            { u: "https://adikds.github.io/GEOSTRUCT-PRO-20-FORMULA-GEOTECHNICAL/", i: "fa-layer-group", n: "GeoStruct Pro 20", cat: "Geotechnical & Civil" },
+            { u: "https://adikds.github.io/UNIFIED-SOIL-CLASSIFICATION-SYSTEM/", i: "fa-cubes", n: "USCS Soil Classification", cat: "Geotechnical & Civil" },
+            { u: "https://adikds.github.io/AERORADAR-PRO/", i: "fa-plane", n: "AeroRadar Pro v3.4", cat: "Aviation & ADS-B" },
+            { u: "https://adikds.github.io/HYDRACANAL-PRO-GEOMETRIC-DESIGN/", i: "fa-water-ladder", n: "HydraCanal Pro Design", cat: "Water Resources" },
+            { u: "https://adikds.github.io/financial-planner/", i: "fa-chart-line", n: "Financial Planner Pro", cat: "Finance & Analytics" },
+            { u: "https://adikds.github.io/business-suite/", i: "fa-chart-bar", n: "Business Suite Pro", cat: "Finance & Analytics" },
+            { u: "https://adikds.github.io/stock-manager/", i: "fa-boxes-stacked", n: "Stock Manager Pro", cat: "Management & POS" },
+            { u: "https://adikds.github.io/Aplikasi_Point_of_Sale_-POS-_atau_sistem_kasir/", i: "fa-cash-register", n: "POS Terminal Kasir", cat: "Management & POS" },
+            { u: "https://adikds.github.io/KEUANGANKU/", i: "fa-wallet", n: "Keuanganku Personal", cat: "Finance & Analytics" },
+            { u: "https://adikds.github.io/DARUSSYIFA-MEDIKA/", i: "fa-hospital", n: "DARUSSYIFA Medika", cat: "Medical & Health AI" },
+            { u: "https://adikds.github.io/SKIN_SYIFA_AI/", i: "fa-magnifying-glass-chart", n: "SKIN SYIFA AI", cat: "Medical & Health AI" },
+            { u: "https://adikds.github.io/NEURO-PSYCH_AI/", i: "fa-brain", n: "NEURO-PSYCH AI", cat: "Medical & Health AI" },
+            { u: "https://adikds.github.io/SMILE-SYIFA-AI/", i: "fa-face-smile", n: "SMILE SYIFA AI", cat: "Medical & Health AI" },
+            { u: "https://adikds.github.io/DOKTER-AI/", i: "fa-user-doctor", n: "DOKTER AI Assistant", cat: "Medical & Health AI" },
+            { u: "https://www.f15library.com/", i: "fa-book-open-reader", n: "F15 Library Online", cat: "Education & Digital Lib" },
+            { u: "https://adikds.github.io/ATLAS-GEOTEKNIK/", i: "fa-earth-americas", n: "Atlas Geoteknik", cat: "Geotechnical & Civil" },
+            { u: "https://adikds.github.io/STATISTICS_for_ENGINEERS-/", i: "fa-chart-pie", n: "Statistics for Engineers", cat: "Engineering & Math" },
+            { u: "https://famelack.com/radio/id", i: "fa-radio", n: "Radio Online Famelack", cat: "Media & Streaming" },
+            { u: "https://famelack.com/tv/id", i: "fa-tv", n: "TV Famelack Live", cat: "Media & Streaming" },
+            { u: "https://adikds.github.io/Mega-Atlas-Kedokteran-Neurologi-Bedah-Syaraf/", i: "fa-brain", n: "Neurologi & Bedah Syaraf", cat: "Medical & Health AI" },
+            { u: "https://adikds.github.io/Adi_Newbie/", i: "fa-user-astronaut", n: "Adi Newbie Portal", cat: "Portfolio & Personal" },
+            { u: "https://adi-kudus.github.io/dss-sedimen-pro/", i: "fa-water", n: "DSS Sedimen Pesisir", cat: "Water Resources & Civil" },
+            { u: "https://adikds.github.io/ANALISIS-PONDASI-TELAPAK-/", i: "fa-cubes-stacked", n: "Analisis Pondasi Telapak", cat: "Geotechnical & Structural" },
+            { u: "https://adikds.github.io/ai-meeting-assistant/", i: "fa-microphone-lines", n: "Notulen AI Meeting Pro", cat: "AI & Productivity" },
+            { u: "https://adikds.github.io/gudang-bulog/", i: "fa-warehouse", n: "Struktur Gudang Bulog", cat: "Structural Engineering" },
+            { u: "https://adikds.github.io/-Doa-Digital-Pro/", i: "fa-hands-praying", n: "Kumpulan Doa Digital Pro", cat: "Islamic & Lifestyle" },
+            { u: "https://adikds.github.io/AASHTO-SOIL-CLASSIFIER/", i: "fa-road", n: "AASHTO Soil Classifier", cat: "Geotechnical Engineering" },
+            { u: "https://adikds.github.io/APEX-Foundations-v3.1-Geotechnical-AI-/", i: "fa-monument", n: "APN Foundations v3.1", cat: "Geotechnical & Civil" },
+            { u: "https://adikds.github.io/buildrab-ai-pro/", i: "fa-file-invoice-dollar", n: "BuildRAB AI Pro Edition", cat: "Cost Estimating & Civil" },
+            { u: "https://adikds.github.io/breakwater-analyzer/", i: "fa-shield-halved", n: "Breakwater & Storm Surge", cat: "Coastal Engineering" },
+            { u: "https://adi-kudus.github.io/ANALISA_STRUKTUR_BETON_PONDASI_PRO_v5/", i: "fa-border-all", n: "Struktur Beton & Pondasi", cat: "Geotechnical & Structural" },
+            { u: "https://adi-kudus.github.io/Seismic-Site-Report-SNI-PuSGeN-2024/", i: "fa-hill-rockslide", n: "Seismic Site Report", cat: "Geotechnical Analysis" },
+            { u: "https://adi-kudus.github.io/PORTAL-STRUKTUR-PRO/", i: "fa-faucet-drip", n: "Portal Struktur Pro", cat: "Struktur Engineering" },
+            { u: "https://adi-kudus.github.io/STADION-PRO-v4.0-Sepakbola-Modern-/", i: "fa-arrow-down-up-across-line", n: "Struktur Analisis Stadiun", cat: "Analisis Struktur" },
+            { u: "https://adi-kudus.github.io/GEO-CIVIL-3D-PRO/", i: "fa-laptop-code", n: "Analisis Struktur Turap", cat: "Geotechnical & Civil" },
+            { u: "https://adikds.github.io/seismic-site-response-pro/", i: "fa-house-crack", n: "Seismic Site Response Pro", cat: "Earthquake Engineering" },
+            { u: "https://adi-kudus.github.io/GeoStruct_Pro_Master_Edition/", i: "fa-mountain-city", n: "GeoStruct Pro Master Edition", cat: "Geotechnical Suite" }
+        ];
+
+        let currentStep = 1;
+        const totalSteps = 8;
+        let lastCalculationData = null;
+
+        const stepTitles = [
+            "Jenis Proyek & Mode Perhitungan",
+            "Ukuran & Dimensi Bangunan",
+            "Rencana Jumlah Lantai",
+            "Target Anggaran yang Disiapkan",
+            "Wilayah & Lokasi Pembangunan",
+            "Aksesibilitas Jalan Masuk",
+            "Kondisi Fisik & Kontur Lahan",
+            "Standar Mutu Finishing & Desain"
+        ];
+
+        const pekerjaan15 = [
+            { no: 1, name: "Pekerjaan Persiapan, Pengukuran & Bowplank", pct: 1.5 },
+            { no: 2, name: "Pekerjaan Galian & Urugan Tanah", pct: 2.5 },
+            { no: 3, name: "Pondasi Batu Kali / Rollag / Footplate", pct: 8.0 },
+            { no: 4, name: "Struktur Beton Bertulang (Sloof, Kolom, Balok, Plat)", pct: 22.0 },
+            { no: 5, name: "Pasangan Dinding Bata/Hebel, Plesteran & Acian", pct: 12.0 },
+            { no: 6, name: "Rangka & Penutup Atap (Kuda-kuda, Genteng, Nok)", pct: 11.0 },
+            { no: 7, name: "Plafond Gypsum/PVC & Rangka Besi Hollow", pct: 4.5 },
+            { no: 8, name: "Kusen, Daun Pintu, Jendela & Kaca", pct: 6.0 },
+            { no: 9, name: "Penutup Lantai & Dinding (Granit / Keramik)", pct: 10.0 },
+            { no: 10, name: "Pengecatan Interior, Eksterior & Plafond", pct: 4.5 },
+            { no: 11, name: "Instalasi Sanitasi Air Bersih, Air Kotor & Resapan", pct: 4.0 },
+            { no: 12, name: "Instalasi Elektrikal, Titik Lampu & Panel MCB", pct: 3.5 },
+            { no: 13, name: "Sanitair (Kloset, Wastafel, Kran, Shower, Floor Drain)", pct: 3.5 },
+            { no: 14, name: "Finishing Fasad & Estetika Eksterior", pct: 4.5 },
+            { no: 15, name: "Pembersihan Akhir & Perapihan Lapangan", pct: 2.5 }
+        ];
+
+        function formatRupiah(num) {
+            return "Rp " + Math.round(num).toLocaleString("id-ID");
+        }
+
+        function calcDimensi() {
+            const p = parseFloat(document.getElementById('dim-panjang').value) || 0;
+            const l = parseFloat(document.getElementById('dim-lebar').value) || 0;
+            if (p > 0 && l > 0) {
+                document.getElementById('input-luas').value = (p * l).toFixed(1);
+            }
+        }
+
+        function setQuickLuas(val) {
+            document.getElementById('input-luas').value = val;
+            document.getElementById('dim-panjang').value = '';
+            document.getElementById('dim-lebar').value = '';
+        }
+
+        function setQuickBudget(val) {
+            document.getElementById('input-budget').value = val;
+            updateBudgetFormatted();
+        }
+
+        function updateBudgetFormatted() {
+            const val = parseFloat(document.getElementById('input-budget').value) || 0;
+            document.getElementById('budget-formatted').textContent = "Terbaca: " + formatRupiah(val);
+        }
+        document.getElementById('input-budget').addEventListener('input', updateBudgetFormatted);
+
+        function updateCalcMode() {}
+
+        function updateZonaDesc() {
+            const select = document.getElementById('select-zona');
+            const val = select.value;
+            let note = "";
+            if (val === "1.15") note = "Zona A: Jabodetabek memiliki standar upah harian tukang Rp 160rb - Rp 220rb dan indeks material tinggi.";
+            else if (val === "1.05") note = "Zona B: Kota besar Jawa memiliki upah harian tukang Rp 120rb - Rp 160rb dengan ketersediaan material yang sangat baik.";
+            else if (val === "1.00") note = "Zona C: Kota/Kabupaten menengah memiliki efisiensi upah lokal Rp 100rb - Rp 130rb.";
+            else if (val === "1.10") note = "Zona D: Kota besar luar Jawa memperhitungkan ongkos ekspedisi kontainer semen/besi.";
+            else note = "Zona E: Wilayah remote/kepulauan memerlukan penyesuaian biaya logistik kapal antar-pulau.";
+            document.getElementById('zona-info-box').innerHTML = "<span class='font-bold text-emerald-600 dark:text-emerald-400'>Catatan Regional:</span> " + note;
+        }
+
+        function updateProgressBar() {
+            const pct = (currentStep / totalSteps) * 100;
+            document.getElementById('progress-bar').style.width = pct + '%';
+            document.getElementById('current-step-num').textContent = currentStep;
+            document.getElementById('step-percent').textContent = Math.round(pct) + '% Selesai';
+            document.getElementById('step-instruction').textContent = stepTitles[currentStep - 1];
+
+            document.getElementById('prev-btn').disabled = (currentStep === 1);
+            if (currentStep === totalSteps) {
+                document.getElementById('next-btn').innerHTML = "<span>Hitung Estimasi Budget</span><span>⚡</span>";
+            } else {
+                document.getElementById('next-btn').innerHTML = "<span>Lanjut Langkah Berikutnya</span><span>→</span>";
+            }
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
+            const activeEl = document.getElementById('step-' + step);
+            if (activeEl) activeEl.classList.remove('hidden');
+            updateProgressBar();
+        }
+
+        function jumpToStep(step) {
+            document.getElementById('result-section').classList.add('hidden');
+            document.getElementById('analyzing-section').classList.add('hidden');
+            document.getElementById('wizard-section').classList.remove('hidden');
+            currentStep = step;
+            showStep(currentStep);
+            window.scrollTo({ top: 120, behavior: 'smooth' });
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                showStep(currentStep);
+            } else {
+                runAnalysis();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        function editWizard() {
+            jumpToStep(1);
+        }
+
+        function runAnalysis() {
+            document.getElementById('wizard-section').classList.add('hidden');
+            document.getElementById('analyzing-section').classList.remove('hidden');
+
+            const statuses = [
+                "Menganalisis parameter konstruksi...",
+                "Mengkalkulasi koefisien zona wilayah & aksesibilitas material...",
+                "Menghitung volume pekerjaan struktur & arsitektural...",
+                "Menyiapkan rincian alokasi 15 pos pekerjaan SNI..."
+            ];
+            let sIdx = 0;
+            const interval = setInterval(() => {
+                sIdx++;
+                if (sIdx < statuses.length) {
+                    document.getElementById('analyzing-status').textContent = statuses[sIdx];
+                }
+            }, 350);
+
+            setTimeout(() => {
+                clearInterval(interval);
+                document.getElementById('analyzing-section').classList.add('hidden');
+                renderResults();
+                document.getElementById('result-section').classList.remove('hidden');
+                window.scrollTo({ top: 100, behavior: 'smooth' });
+            }, 1400);
+        }
+
+        function renderResults() {
+            const mode = document.querySelector('input[name="project_type"]:checked').value;
+            let luas = parseFloat(document.getElementById('input-luas').value) || 72;
+            const lantai = parseFloat(document.querySelector('input[name="lantai"]:checked').value) || 1;
+            const targetBudget = parseFloat(document.getElementById('input-budget').value) || 350000000;
+            const zona = parseFloat(document.getElementById('select-zona').value) || 1.05;
+            const akses = parseFloat(document.querySelector('input[name="akses"]:checked').value) || 1.0;
+            const lahan = parseFloat(document.querySelector('input[name="lahan"]:checked').value) || 1.0;
+            const finishingBase = parseFloat(document.querySelector('input[name="finishing"]:checked').value) || 3200000;
+
+            let faktorLantai = 1.0;
+            if (lantai === 2) faktorLantai = 1.18;
+            else if (lantai === 3) faktorLantai = 1.35;
+
+            let faktorProyek = 1.0;
+            if (mode === 'renovasi') faktorProyek = 0.70;
+
+            const unitRateM2 = finishingBase * faktorLantai * zona * akses * lahan * faktorProyek;
+
+            let expectedBudget = 0;
+            let safeBudget = 0;
+
+            if (mode === 'bangun_budget') {
+                safeBudget = targetBudget;
+                expectedBudget = targetBudget / 1.10;
+                luas = expectedBudget / unitRateM2;
+                luas = Math.round(luas * 10) / 10;
+                document.getElementById('input-luas').value = luas;
+            } else {
+                expectedBudget = luas * unitRateM2;
+                safeBudget = expectedBudget * 1.10;
+            }
+
+            document.getElementById('out-expected-budget').textContent = formatRupiah(expectedBudget);
+            document.getElementById('out-safe-budget').textContent = formatRupiah(safeBudget);
+            document.getElementById('out-biaya-m2').textContent = formatRupiah(unitRateM2) + " / m²";
+
+            const healthBadge = document.getElementById('health-badge');
+            const healthText = document.getElementById('health-text');
+            const healthIcon = document.getElementById('health-icon');
+            let healthStatus = "Aman";
+
+            if (targetBudget >= safeBudget) {
+                healthStatus = "Sangat Sehat";
+                healthBadge.textContent = "Sangat Sehat";
+                healthBadge.className = "text-[10px] px-2 py-0.5 rounded font-bold ml-auto bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
+                healthIcon.textContent = "✅";
+                healthText.textContent = "Anggaran yang Anda siapkan (" + formatRupiah(targetBudget) + ") berada di atas batas safe budget (" + formatRupiah(safeBudget) + "). Anda memiliki cadangan dana yang sangat aman untuk material berkualitas.";
+            } else if (targetBudget >= expectedBudget) {
+                healthStatus = "Cukup / Ketat";
+                healthBadge.textContent = "Cukup / Ketat";
+                healthBadge.className = "text-[10px] px-2 py-0.5 rounded font-bold ml-auto bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border border-amber-500/30";
+                healthIcon.textContent = "⚠️";
+                healthText.textContent = "Anggaran Anda (" + formatRupiah(targetBudget) + ") menutup biaya pokok fisik, namun ruang gerak dana cadangan tipis. Sangat disarankan mengunci SPK borongan di awal agar tidak boncos.";
+            } else {
+                healthStatus = "Rawan Boncos";
+                healthBadge.textContent = "Rawan Boncos";
+                healthBadge.className = "text-[10px] px-2 py-0.5 rounded font-bold ml-auto bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-500/30";
+                healthIcon.textContent = "🚨";
+                healthText.textContent = "Pagu dana Anda (" + formatRupiah(targetBudget) + ") berada di bawah kalkulasi fisik (" + formatRupiah(expectedBudget) + "). Pertimbangkan untuk mengurangi luas bangunan (" + luas + " m²) atau menyesuaikan kelas finishing.";
+            }
+
+            let durasiBulan = Math.ceil(luas / 25) + (lantai > 1 ? 1 : 0);
+            if (durasiBulan < 3) durasiBulan = 3;
+            if (durasiBulan > 10) durasiBulan = 10;
+            document.getElementById('durasi-badge').textContent = "~ " + durasiBulan + " - " + (durasiBulan + 1) + " Bulan";
+            document.getElementById('durasi-text').textContent = "Dengan luas " + luas + " m² (" + lantai + " lantai), ritme kerja ideal membutuhkan 1 mandor, 2-3 tukang ahli, dan 3-4 kenek untuk target penyelesaian optimal.";
+
+            const tbody = document.getElementById('breakdown-tbody');
+            tbody.innerHTML = '';
+            pekerjaan15.forEach(item => {
+                const itemNominal = (item.pct / 100) * expectedBudget;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-100 dark:hover:bg-slate-800/40 transition";
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 text-slate-400 dark:text-slate-500 font-mono">${item.no}</td>
+                    <td class="py-2.5 px-3 text-slate-800 dark:text-slate-200">
+                        <div>${item.name}</div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-800 h-1 rounded-full mt-1 overflow-hidden sm:hidden">
+                            <div class="bg-emerald-500 h-full" style="width: ${item.pct * 3}%"></div>
+                        </div>
+                    </td>
+                    <td class="py-2.5 px-2 text-center text-slate-500 dark:text-slate-400 font-mono">${item.pct.toFixed(1)}%</td>
+                    <td class="py-2.5 px-3 text-right text-emerald-600 dark:text-emerald-400 font-mono font-bold">${formatRupiah(itemNominal)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('table-total-nominal').textContent = formatRupiah(expectedBudget);
+
+            const zonaSelect = document.getElementById('select-zona');
+            const zonaName = zonaSelect.options[zonaSelect.selectedIndex].text.split(':')[0];
+            const summaryGrid = document.getElementById('summary-params-grid');
+            summaryGrid.innerHTML = `
+                <div class="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div class="text-slate-500 text-[10px]">Luas Terbangun</div>
+                    <div class="font-bold text-slate-900 dark:text-white">${luas} m² (${lantai} Lantai)</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div class="text-slate-500 text-[10px]">Zona Wilayah</div>
+                    <div class="font-bold text-slate-900 dark:text-white">${zonaName} (${zona}x)</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div class="text-slate-500 text-[10px]">Akses Jalan</div>
+                    <div class="font-bold text-slate-900 dark:text-white">${akses === 1.0 ? 'Sangat Mudah' : akses === 1.03 ? 'Cukup Mudah' : 'Gang Sempit'}</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                    <div class="text-slate-500 text-[10px]">Kelas Finishing</div>
+                    <div class="font-bold text-slate-900 dark:text-white">${finishingBase === 3200000 ? 'Standar' : finishingBase === 4300000 ? 'Menengah' : 'Mewah'}</div>
+                </div>
+            `;
+
+            lastCalculationData = {
+                mode: mode,
+                luas: luas,
+                lantai: lantai,
+                targetBudget: targetBudget,
+                expectedBudget: expectedBudget,
+                safeBudget: safeBudget,
+                unitRateM2: unitRateM2,
+                zonaName: zonaName,
+                durasi: durasiBulan + " - " + (durasiBulan + 1) + " Bulan",
+                healthStatus: healthStatus,
+                healthText: healthText.textContent
+            };
+
+            notifyBotCalculation(expectedBudget, safeBudget, luas);
+        }
+
+        function sendToWhatsApp() {
+            if (!lastCalculationData) {
+                alert("Jalankan kalkulasi terlebih dahulu!");
+                return;
+            }
+            let rawNo = document.getElementById('targetWhatsAppNo').value.trim();
+            if (!rawNo) {
+                alert("Harap masukkan nomor WhatsApp penerima!");
+                return;
+            }
+            let cleanNo = rawNo.replace(/[^0-9]/g, '');
+            if (cleanNo.startsWith('0')) {
+                cleanNo = '62' + cleanNo.slice(1);
+            }
+
+            const d = lastCalculationData;
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + " WIB";
+
+            let msg = "*LEMBAR ESTIMASI BUDGET RUMAH PRO (ANTI-BONCOS)*\n";
+            msg += "📅 _" + dateStr + " • " + timeStr + "_\n";
+            msg += "👨‍💼 Lead Engineer: Ir. Mohamad Hartadi\n";
+            msg += "-------------------------------------------\n";
+            msg += "📋 *PARAMETER PROYEK:*\n";
+            msg += "• Luas Bangunan: *" + d.luas + " m²* (" + d.lantai + " Lantai)\n";
+            msg += "• Lokasi Wilayah: " + d.zonaName + "\n";
+            msg += "• Perkiraan Durasi: " + d.durasi + "\n";
+            msg += "• Health Status: *" + d.healthStatus + "*\n";
+            msg += "-------------------------------------------\n";
+            msg += "💰 *HASIL ESTIMASI BIAYA:*\n";
+            msg += "• *Expected Budget (Fisik Utama):* " + formatRupiah(d.expectedBudget) + "\n";
+            msg += "• *Safe Budget (+10% Contingency):* " + formatRupiah(d.safeBudget) + "\n";
+            msg += "• *Rata-rata Biaya / m²:* " + formatRupiah(d.unitRateM2) + " / m²\n";
+            msg += "-------------------------------------------\n";
+            msg += "📊 *RINGKASAN 15 POS PEKERJAAN (SNI):*\n";
+            pekerjaan15.forEach(p => {
+                const nom = (p.pct / 100) * d.expectedBudget;
+                msg += p.no + ". " + p.name + " (" + p.pct + "%): " + formatRupiah(nom) + "\n";
+            });
+            msg += "-------------------------------------------\n";
+            msg += "*Catatan:* Estimasi awal kelayakan budget. Dihitung otomatis via Aplikasi Budget Rumah Starter Kit Pro.";
+
+            const waUrl = "https://api.whatsapp.com/send/?phone=" + cleanNo + "&text=" + encodeURIComponent(msg);
+            window.open(waUrl, '_blank');
+        }
+
+        function exportWordDoc() {
+            if (!lastCalculationData) {
+                alert("Jalankan kalkulasi terlebih dahulu!");
+                return;
+            }
+            const d = lastCalculationData;
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            let tableRows = '';
+            pekerjaan15.forEach(p => {
+                const nom = (p.pct / 100) * d.expectedBudget;
+                tableRows += `
+                    <tr>
+                        <td style="border:1px solid #ccc; padding:6px; text-align:center;">${p.no}</td>
+                        <td style="border:1px solid #ccc; padding:6px;">${p.name}</td>
+                        <td style="border:1px solid #ccc; padding:6px; text-align:center;">${p.pct}%</td>
+                        <td style="border:1px solid #ccc; padding:6px; text-align:right;">${formatRupiah(nom)}</td>
+                    </tr>
+                `;
+            });
+
+            const docContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset='utf-8'><title>Estimasi Budget Rumah</title>
+                <style>
+                    body { font-family: Arial, sans-serif; font-size: 11pt; color: #111; line-height: 1.5; }
+                    h1 { color: #047857; font-size: 16pt; margin-bottom: 4px; }
+                    table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 10pt; }
+                    th { background-color: #f1f5f9; border: 1px solid #94a3b8; padding: 6px; }
+                </style>
+                </head>
+                <body>
+                    <h1>LEMBAR ESTIMASI BUDGET RUMAH PRO (ANTI-BONCOS)</h1>
+                    <p style="color:#64748b; font-size:9pt; margin-top:0;">Dibuat pada: ${dateStr} • Lead Engineer: Ir. Mohamad Hartadi</p>
+                    <hr/>
+                    <h3>1. Parameter Rencana Bangunan</h3>
+                    <ul>
+                        <li><strong>Luas Total Bangunan:</strong> ${d.luas} m² (${d.lantai} Lantai)</li>
+                        <li><strong>Lokasi / Zona Wilayah:</strong> ${d.zonaName}</li>
+                        <li><strong>Perkiraan Waktu Pengerjaan:</strong> ${d.durasi}</li>
+                        <li><strong>Status Kelayakan Budget:</strong> ${d.healthStatus}</li>
+                    </ul>
+                    <h3>2. Ringkasan Anggaran Utama</h3>
+                    <table style="width:70%;">
+                        <tr><th>Kategori Anggaran</th><th>Nominal (Rupiah)</th></tr>
+                        <tr><td><strong>Estimasi Biaya Utama (Expected Budget)</strong></td><td><strong>${formatRupiah(d.expectedBudget)}</strong></td></tr>
+                        <tr><td><strong>Recommended Safe Budget (+10% Contingency)</strong></td><td style="color:#047857;"><strong>${formatRupiah(d.safeBudget)}</strong></td></tr>
+                        <tr><td>Rata-rata Biaya per m²</td><td>${formatRupiah(d.unitRateM2)} / m²</td></tr>
+                    </table>
+                    <h3>3. Rincian Alokasi 15 Pos Pekerjaan Konstruksi</h3>
+                    <table>
+                        <thead>
+                            <tr><th>No</th><th>Pos Pekerjaan</th><th>Porsi (%)</th><th>Alokasi Biaya (Rp)</th></tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                            <tr style="background:#f8fafc; font-weight:bold;">
+                                <td colspan="2" style="border:1px solid #ccc; padding:6px;">TOTAL BIAYA UTAMA</td>
+                                <td style="border:1px solid #ccc; padding:6px; text-align:center;">100%</td>
+                                <td style="border:1px solid #ccc; padding:6px; text-align:right;">${formatRupiah(d.expectedBudget)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <br/><br/>
+                    <p style="font-size:9pt; color:#64748b;">
+                        <em>Diverifikasi oleh: Ir. Mohamad Hartadi • Spesialis Rekayasa Geoteknik & Struktur Sipil</em>
+                    </p>
+                </body>
+                </html>
+            `;
+
+            const blob = new Blob(['﻿' + docContent], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Estimasi_Budget_Rumah_${d.luas}m2.doc`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function copySummary() {
+            if (!lastCalculationData) {
+                alert("Jalankan kalkulasi terlebih dahulu!");
+                return;
+            }
+            const d = lastCalculationData;
+            const text = "*ESTIMASI BUDGET RUMAH PRO*\n" +
+                         "• Luas Bangunan: " + d.luas + " m² (" + d.lantai + " Lantai)\n" +
+                         "• Estimasi Biaya Utama: " + formatRupiah(d.expectedBudget) + "\n" +
+                         "• Safe Budget (+10% Contingency): " + formatRupiah(d.safeBudget) + "\n" +
+                         "• Biaya / m²: " + formatRupiah(d.unitRateM2) + " / m²\n" +
+                         "• Durasi Proyek: " + d.durasi + "\n" +
+                         "Dihitung otomatis via Aplikasi Budget Rumah Starter Kit Pro.";
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Ringkasan estimasi berhasil disalin ke clipboard!");
+            });
+        }
+
+        function printCalculationSheet() {
+            if (!lastCalculationData) {
+                alert("Jalankan kalkulasi terlebih dahulu sebelum mencetak.");
+                return;
+            }
+            const d = lastCalculationData;
+            const reportContainer = document.getElementById('printableReport');
+            const printContent = document.getElementById('printContent');
+            const printTime = document.getElementById('printTimestamp');
+            printTime.innerText = "Tanggal Cetak: " + new Date().toLocaleString('id-ID');
+
+            let tableRows = '';
+            pekerjaan15.forEach(p => {
+                const nom = (p.pct / 100) * d.expectedBudget;
+                tableRows += `
+                    <tr>
+                        <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">${p.no}</td>
+                        <td style="border:1px solid #cbd5e1; padding:6px;">${p.name}</td>
+                        <td style="border:1px solid #cbd5e1; padding:6px; text-align:center;">${p.pct}%</td>
+                        <td style="border:1px solid #cbd5e1; padding:6px; text-align:right; font-weight:bold;">${formatRupiah(nom)}</td>
+                    </tr>
+                `;
+            });
+
+            printContent.innerHTML = `
+                <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 14px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div>
+                            <h2 style="font-size:16px; font-weight:900; margin:0; color:#0f172a;">RUMAH TINGGAL ${d.luas} M² (${d.lantai} LANTAI)</h2>
+                            <p style="margin:2px 0 0 0; color:#475569; font-size:11px;">Lokasi Wilayah: ${d.zonaName} • Status: ${d.healthStatus}</p>
+                        </div>
+                        <div style="text-align:right; font-size:12px; font-family:monospace;">
+                            <span>Expected Budget: <strong>${formatRupiah(d.expectedBudget)}</strong></span><br>
+                            <span>Safe Budget (+10%): <strong style="color:#047857;">${formatRupiah(d.safeBudget)}</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="font-size:12px; font-weight:800; text-transform:uppercase; margin:12px 0 6px 0; border-bottom:1px solid #cbd5e1; padding-bottom:3px;">
+                    1. Rincian Alokasi 15 Pos Pekerjaan Konstruksi (Standar SNI)
+                </h3>
+                <table style="width:100%; border-collapse:collapse; font-size:11px;" border="1">
+                    <thead>
+                        <tr style="background:#f1f5f9;">
+                            <th style="padding:6px;">No</th>
+                            <th style="padding:6px; text-align:left;">Pos Pekerjaan</th>
+                            <th style="padding:6px; text-align:center;">Porsi (%)</th>
+                            <th style="padding:6px; text-align:right;">Alokasi Biaya (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                        <tr style="background:#f8fafc; font-weight:bold;">
+                            <td colspan="2" style="padding:8px;">TOTAL FISIK UTAMA</td>
+                            <td style="padding:8px; text-align:center;">100%</td>
+                            <td style="padding:8px; text-align:right; color:#047857;">${formatRupiah(d.expectedBudget)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="margin-top:35px; border-top:2px solid #0f172a; padding-top:12px; display:flex; justify-content:space-between; align-items:flex-end;">
+                    <div style="font-size:10px; color:#475569; max-width:480px;">
+                        <div><strong>Standar Acuan:</strong> SNI Konstruksi Gedung & Rencana Anggaran Biaya</div>
+                        <div>Lembar verifikasi ini digenerasi otomatis oleh sistem Budget Rumah Starter Kit Pro V2.6.</div>
+                    </div>
+                    <div style="text-align:center; font-size:11px; min-width:200px;">
+                        <span>Diverifikasi Oleh:</span><br><br><br>
+                        <strong style="text-decoration:underline; color:#0f172a;">Ir. Mohamad Hartadi (Adi)</strong><br>
+                        <span style="color:#475569; font-size:10px; font-family:monospace;">Ahli Geoteknik & Struktur Sipil</span>
+                    </div>
+                </div>
+            `;
+
+            reportContainer.classList.remove('hidden');
+            window.print();
+            reportContainer.classList.add('hidden');
+        }
+
+        let ttsActiveMode = 1;
+
+        function toggleChatDrawer() {
+            const drawer = document.getElementById('chatDrawer');
+            drawer.classList.toggle('hidden');
+            drawer.classList.toggle('flex');
+            if (!drawer.classList.contains('hidden')) {
+                document.getElementById('chatInputText').focus();
+                scrollChatToBottom();
+            }
+        }
+
+        function scrollChatToBottom() {
+            const feed = document.getElementById('chatMessageFeed');
+            if (feed) feed.scrollTop = feed.scrollHeight;
+        }
+
+        function onChatFormSubmit(e) {
+            e.preventDefault();
+            const inp = document.getElementById('chatInputText');
+            const q = inp.value.trim();
+            if (!q) return;
+            inp.value = "";
+            handleChatQuery(q);
+        }
+
+        function appendUserMessage(text) {
+            const feed = document.getElementById('chatMessageFeed');
+            const userHtml = `
+                <div class="text-right flex justify-end">
+                    <div class="inline-block bg-emerald-500 text-slate-950 font-bold p-3 rounded-2xl rounded-tr-none text-xs sm:text-sm text-left max-w-[85%] leading-relaxed shadow-md break-words">
+                        <span class="font-black block text-slate-900 text-[10px] mb-0.5 font-mono"><i class="fa-solid fa-user mr-1"></i> Anda:</span>
+                        ${text}
+                    </div>
+                </div>
+            `;
+            feed.insertAdjacentHTML('beforeend', userHtml);
+            scrollChatToBottom();
+        }
+
+        function appendBotMessage(htmlContent, voiceText) {
+            const feed = document.getElementById('chatMessageFeed');
+            const botHtml = `
+                <div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl rounded-tl-none border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs sm:text-sm leading-relaxed shadow-sm">
+                    <span class="text-emerald-600 dark:text-emerald-400 font-extrabold block mb-1.5 text-xs font-mono uppercase tracking-wider">
+                        <i class="fa-solid fa-robot mr-1 text-emerald-500"></i> BUDGET CO-PILOT:
+                    </span>
+                    ${htmlContent}
+                </div>
+            `;
+            feed.insertAdjacentHTML('beforeend', botHtml);
+            scrollChatToBottom();
+
+            if (voiceText) speakVoice(voiceText);
+        }
+
+        function notifyBotCalculation(expected, safe, luas) {
+            const feed = document.getElementById('chatMessageFeed');
+            const notifHtml = `
+                <div class="bg-emerald-50 dark:bg-emerald-950/60 p-3 rounded-2xl border border-emerald-500/50 text-xs sm:text-sm text-emerald-900 dark:text-emerald-300 font-bold leading-relaxed shadow-sm">
+                    <span class="font-black text-xs block mb-0.5 text-emerald-700 dark:text-emerald-400 font-mono">
+                        <i class="fa-solid fa-calculator mr-1"></i> KALKULASI BARU TERDETEKSI:
+                    </span>
+                    Rumah Luas ${luas} m²: Expected Budget <strong>${formatRupiah(expected)}</strong> | Safe Budget <strong>${formatRupiah(safe)}</strong>. Klik tombol <strong>'Analisis'</strong> di atas untuk review kelayakan!
+                </div>
+            `;
+            feed.insertAdjacentHTML('beforeend', notifHtml);
+            scrollChatToBottom();
+        }
+
+        function toggleSiriTTS() {
+            ttsActiveMode = (ttsActiveMode + 1) % 3;
+            const icon = document.getElementById('ttsIcon');
+            if (ttsActiveMode === 0) {
+                icon.className = "fa-solid fa-volume-xmark text-slate-600 text-xs";
+                window.speechSynthesis.cancel();
+            } else if (ttsActiveMode === 1) {
+                icon.className = "fa-solid fa-headset text-slate-950 text-xs";
+                speakVoice("Siri Voice Wanita aktif.");
+            } else {
+                icon.className = "fa-solid fa-robot text-slate-950 text-xs";
+                speakVoice("Siri Voice Pria aktif.");
+            }
+        }
+
+        function speakVoice(text) {
+            if (ttsActiveMode === 0 || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+
+            const clean = text.replace(/<[^>]*>?/gm, '').replace(/[*_#]/g, '').trim();
+            if (!clean) return;
+
+            const utterance = new SpeechSynthesisUtterance(clean);
+            utterance.lang = "id-ID";
+
+            const voices = window.speechSynthesis.getVoices();
+            const idVoices = voices.filter(v => v.lang.includes("id") || v.lang.includes("ID") || v.lang.includes("Indonesian"));
+
+            if (idVoices.length > 0) {
+                utterance.voice = (ttsActiveMode === 2 && idVoices.length > 1) ? idVoices[1] : idVoices[0];
+            }
+            utterance.pitch = ttsActiveMode === 1 ? 1.25 : 0.85;
+            utterance.rate = 1.05;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        async function handleChatQuery(query) {
+            appendUserMessage(query);
+            const lower = query.toLowerCase().trim();
+
+            // 0. Shortcut: My Aplikasi (GitHub 50+ Apps Directory)
+            if (lower === "my aplikasi" || lower === "my apps" || lower.includes("aplikasi") && (lower.includes("hartadi") || lower.includes("saya") || lower.includes("github") || lower.includes("daftar") || lower.includes("portofolio") || lower.includes("koleksi"))) {
+                let listHtml = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2.5 max-h-64 overflow-y-auto custom-scroll pr-1">`;
+                myAppsDirectory.forEach(app => {
+                    listHtml += `
+                        <a href="${app.u}" target="_blank" rel="noopener noreferrer" class="p-2.5 bg-slate-50 dark:bg-slate-950 hover:border-emerald-500 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between group transition text-decoration-none shadow-sm">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 text-xs group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid ${app.i}"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-500 block truncate">${app.n}</span>
+                                    <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono block truncate">${app.cat}</span>
+                                </div>
+                            </div>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-400 group-hover:text-emerald-500 ml-1 shrink-0"></i>
+                        </a>
+                    `;
+                });
+                listHtml += `</div>`;
+
+                const resp = `
+                    <div class="pb-1.5 border-b border-emerald-500/30">
+                        <strong class="text-emerald-600 dark:text-emerald-400 text-sm font-tech uppercase block">
+                            <i class="fa-solid fa-cubes-stacked text-emerald-500 mr-1"></i> Direktori 50+ My Aplikasi (GitHub):
+                        </strong>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">Dibuat oleh Ir. Mohamad Hartadi • Klik aplikasi untuk membuka di tab baru:</p>
+                    </div>
+                    ${listHtml}
+                `;
+                appendBotMessage(resp, "Menampilkan direktori 50 aplikasi GitHub karya Ir Mohamad Hartadi. Silakan pilih aplikasi untuk membuka langsung di tab baru.");
+                return;
+            }
+
+
+            if (lower.includes("fitur") || lower === "fitur aplikasi") {
+                const resp = `
+                    <strong class="text-emerald-600 dark:text-emerald-400 text-sm font-tech uppercase block mb-1">
+                        <i class="fa-solid fa-sliders text-emerald-500 mr-1"></i> Fitur Utama Budget Rumah Pro:
+                    </strong>
+                    <ol class="list-decimal pl-4 space-y-1 text-slate-700 dark:text-slate-300 font-medium text-xs sm:text-sm">
+                        <li><strong>8 Langkah Wizard Parameter:</strong> Mulai jenis proyek, dimensi, lantai, budget, zona, akses, lahan, dan finishing.</li>
+                        <li><strong>Reversi Luas dari Budget:</strong> Menghitung luas maksimal m² yang aman dibangun dengan dana Anda.</li>
+                        <li><strong>Alokasi 15 Pos Pekerjaan:</strong> Pembagian anggaran transparan standar SNI.</li>
+                        <li><strong>Safe Budget (+10% Contingency):</strong> Alokasi dana cadangan darurat anti-boncos.</li>
+                        <li><strong>Ekspor WhatsApp, Word & PDF:</strong> Kirim langsung ke No. WA serta unduh lembar .doc & .pdf resmi.</li>
+                        <li><strong>Screensaver & Live Clock:</strong> Visualisasi 3D bumi dan waktu real-time.</li>
+                    </ol>
+                `;
+                appendBotMessage(resp, "Berikut adalah fitur-fitur unggulan pada aplikasi Budget Rumah Starter Kit Pro.");
+                return;
+            }
+
+            if (lower.includes("analisis") || lower.includes("hasil") || lower.includes("review")) {
+                if (lastCalculationData) {
+                    const d = lastCalculationData;
+                    const resp = `
+                        <strong class="text-emerald-600 dark:text-emerald-400 text-sm font-tech uppercase block mb-1">
+                            <i class="fa-solid fa-chart-line mr-1"></i> Tinjauan Analisis Kelayakan Budget:
+                        </strong>
+                        <div class="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-300 dark:border-slate-800 space-y-2 text-xs sm:text-sm font-mono">
+                            <div><strong>Luas Terbangun:</strong> ${d.luas} m² (${d.lantai} Lantai)</div>
+                            <div><strong>Expected Budget:</strong> <span class="text-emerald-600 dark:text-emerald-400 font-bold">${formatRupiah(d.expectedBudget)}</span></div>
+                            <div><strong>Safe Budget:</strong> <span class="text-teal-600 dark:text-teal-400 font-bold">${formatRupiah(d.safeBudget)}</span></div>
+                            <div><strong>Biaya per m²:</strong> ${formatRupiah(d.unitRateM2)} / m²</div>
+                            <div><strong>Status:</strong> <span class="font-bold text-amber-500">${d.healthStatus}</span></div>
+                            <div class="pt-2 border-t border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-sans text-xs">
+                                ${d.healthText}
+                            </div>
+                        </div>
+                    `;
+                    appendBotMessage(resp, "Hasil analisis untuk rumah luas " + d.luas + " meter persegi adalah " + d.healthStatus + ".");
+                } else {
+                    appendBotMessage("Belum ada kalkulasi yang dijalankan. Silakan selesaikan 8 langkah wizard dan klik <strong>'Hitung Estimasi Budget'</strong> terlebih dahulu.", "Belum ada kalkulasi aktif.");
+                }
+                return;
+            }
+
+            if (lower === "programmer" || lower.includes("hartadi") || lower.includes("adi") || lower === "dev. programmer") {
+                const devCard = `
+                    <div class="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-emerald-500/50 space-y-2.5 mt-1 font-mono">
+                        <div class="flex items-center gap-3 pb-2 border-b border-slate-200 dark:border-slate-800">
+                            <div class="w-11 h-11 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-lg shrink-0">
+                                <i class="fa-solid fa-user-tie"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-black text-slate-900 dark:text-white text-sm uppercase font-tech">IR. MOHAMAD HARTADI (ADI)</h4>
+                                <span class="text-xs text-emerald-600 dark:text-emerald-400 font-bold block">Civil & Geotechnical Engineer // Structural Specialist</span>
+                            </div>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <a href="https://api.whatsapp.com/send/?phone=6282231036047&text=Halo+Pak+Mohamad+Hartadi" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 hover:underline font-bold">
+                                <i class="fa-brands fa-whatsapp text-sm w-4"></i> 0822-3103-6047
+                            </a>
+                            <a href="https://www.facebook.com/hartadi.kds" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:underline font-bold">
+                                <i class="fa-brands fa-facebook text-sm w-4"></i> facebook.com/hartadi.kds
+                            </a>
+                            <a href="https://newbieonline7.blogspot.com/" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2 text-amber-600 dark:text-amber-400 hover:underline font-bold">
+                                <i class="fa-solid fa-globe text-sm w-4"></i> newbieonline7.blogspot.com
+                            </a>
+                        </div>
+                    </div>
+                `;
+                appendBotMessage(devCard, "Berikut profil dan kontak lengkap Ir Mohamad Hartadi.");
+                return;
+            }
+
+            if (lower.includes("15 pos") || lower.includes("alokasi")) {
+                let posList = '<div class="space-y-1 font-mono text-xs max-h-56 overflow-y-auto custom-scroll pr-1 mt-2">';
+                pekerjaan15.forEach(p => {
+                    posList += `<div class="flex justify-between p-1.5 rounded-lg bg-slate-100 dark:bg-slate-900"><span>${p.no}. ${p.name}</span><span class="font-bold text-emerald-500">${p.pct}%</span></div>`;
+                });
+                posList += '</div>';
+                const resp = `
+                    <strong class="text-emerald-600 dark:text-emerald-400 text-sm font-tech uppercase block">
+                        <i class="fa-solid fa-list-check mr-1"></i> Standar Alokasi 15 Pos Pekerjaan SNI:
+                    </strong>
+                    ${posList}
+                `;
+                appendBotMessage(resp, "Berikut adalah pembagian persentase 15 pos pekerjaan konstruksi.");
+                return;
+            }
+
+            if (lower.includes("anti boncos") || lower.includes("tips")) {
+                const tips = `
+                    <strong class="text-emerald-600 dark:text-emerald-400 text-sm font-tech uppercase block mb-1">
+                        <i class="fa-solid fa-shield-halved mr-1"></i> 5 Kunci Bangun Rumah Anti-Boncos:
+                    </strong>
+                    <ul class="list-disc pl-4 space-y-1 text-slate-700 dark:text-slate-300 font-medium text-xs sm:text-sm">
+                        <li><strong>Kunci Gambar DED di Awal:</strong> Hindari perubahan desain di tengah pengerjaan fisik karena memicu pekerjaan bongkar-pasang.</li>
+                        <li><strong>Alokasikan 10% Dana Cadangan:</strong> Selalu siapkan <em>Safe Budget</em> untuk kenaikan harga bahan mendadak.</li>
+                        <li><strong>Pilih Sistem Borongan dengan SPK Jelas:</strong> Cantumkan tenggat waktu dan daftar spesifikasi merk material yang disepakati.</li>
+                        <li><strong>Belanja Material Utama Sendiri:</strong> Beli besi tulangan, semen, keramik, dan cat langsung dari distributor grosir.</li>
+                        <li><strong>Utamakan Struktur daripada Finishing:</strong> Jangan pernah menurunkan spek besi atau ketebalan cor demi granit mahal.</li>
+                    </ul>
+                `;
+                appendBotMessage(tips, "Berikut tips utama agar pembangunan rumah Anda terhindar dari pembengkakan biaya.");
+                return;
+            }
+
+            const feed = document.getElementById('chatMessageFeed');
+            const loaderId = "loader-" + Date.now();
+            feed.insertAdjacentHTML('beforeend', `
+                <div id="${loaderId}" class="bg-emerald-50 dark:bg-slate-950 p-3 rounded-2xl border border-emerald-300 dark:border-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs italic font-bold font-mono">
+                    <i class="fa-solid fa-satellite-dish animate-pulse mr-1"></i> Melacak ensiklopedia Wikipedia & AI untuk "${query}"...
+                </div>
+            `);
+            scrollChatToBottom();
+
+            try {
+                const wikiApiUrl = "https://id.wikipedia.org/api/rest_v1/page/summary/" + encodeURIComponent(query);
+                const wikiResp = await fetch(wikiApiUrl);
+                const wikiData = await wikiResp.json();
+
+                const loaderEl = document.getElementById(loaderId);
+                if (loaderEl) loaderEl.remove();
+
+                let extract = wikiData.extract || ("Topik \"" + query + "\" dapat ditelusuri lebih lanjut melalui ensiklopedia Wikipedia dan mesin pencarian AI berikut.");
+                let pageTitle = wikiData.title || query;
+                let pageUrl = wikiData.content_urls ? wikiData.content_urls.desktop.page : ("https://id.wikipedia.org/wiki/Special:Search?search=" + encodeURIComponent(query));
+                let googleUrl = "https://www.google.com/search?q=" + encodeURIComponent(query + " rumah bangunan konstruksi");
+                let geminiUrl = "https://gemini.google.com/";
+                let copilotUrl = "https://copilot.microsoft.com/?q=" + encodeURIComponent(query);
+
+                const outHtml = `
+                    <div class="border-b border-emerald-200 dark:border-emerald-900 pb-1.5 mb-2">
+                        <span class="text-xs text-emerald-700 dark:text-emerald-400 font-black uppercase tracking-wider block font-mono">
+                            <i class="fa-brands fa-wikipedia-w mr-1"></i> Wikipedia: ${pageTitle}
+                        </span>
+                    </div>
+                    <p class="text-slate-800 dark:text-slate-200 text-xs sm:text-[13px] leading-relaxed text-justify mb-2.5 font-medium">${extract}</p>
+                    <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs font-mono">
+                        <a href="${pageUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl transition flex items-center gap-1.5 font-bold">
+                            <i class="fa-brands fa-wikipedia-w"></i> Wikipedia
+                        </a>
+                        <a href="${googleUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition flex items-center gap-1.5 font-bold">
+                            <i class="fa-brands fa-google"></i> Google
+                        </a>
+                        <a href="${geminiUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition flex items-center gap-1.5 font-bold">
+                            <i class="fa-solid fa-sparkles"></i> Gemini AI
+                        </a>
+                        <a href="${copilotUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl transition flex items-center gap-1.5 font-bold">
+                            <i class="fa-solid fa-robot"></i> Copilot AI
+                        </a>
+                    </div>
+                `;
+                appendBotMessage(outHtml, extract);
+
+            } catch (err) {
+                const loaderEl = document.getElementById(loaderId);
+                if (loaderEl) loaderEl.remove();
+
+                const googleUrl = "https://www.google.com/search?q=" + encodeURIComponent(query + " estimasi biaya rumah");
+                const geminiUrl = "https://gemini.google.com/";
+                const copilotUrl = "https://copilot.microsoft.com/?q=" + encodeURIComponent(query);
+
+                const fallbackHtml = `
+                    <p class="text-slate-800 dark:text-slate-200 text-xs sm:text-sm leading-relaxed font-medium">
+                        Topik "${query}" dapat ditelusuri melalui mesin pencarian Google dan asisten AI lainnya:
+                    </p>
+                    <div class="mt-2.5 pt-2 border-t border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 text-xs font-mono">
+                        <a href="${googleUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl flex items-center gap-1.5">
+                            <i class="fa-brands fa-google"></i> Google Search
+                        </a>
+                        <a href="${geminiUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center gap-1.5">
+                            <i class="fa-solid fa-sparkles"></i> Gemini AI
+                        </a>
+                        <a href="${copilotUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-xl flex items-center gap-1.5">
+                            <i class="fa-solid fa-robot"></i> Copilot AI
+                        </a>
+                    </div>
+                `;
+                appendBotMessage(fallbackHtml, "Silakan telusuri topik tersebut di Google atau Gemini.");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+                const icon = document.getElementById('themeIcon');
+                if (icon) icon.className = "fa-solid fa-moon text-sm";
+            }
+
+            updateProgressBar();
+            updateBudgetFormatted();
+            initProgrammerDraggable();
+
+            setTimeout(() => {
+                initLoadingRealisticEarth();
+                initBackgroundRealisticEarth();
+            }, 50);
+        });
+    </script>
+</body>
+</html>
